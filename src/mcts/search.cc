@@ -41,6 +41,8 @@
 #include "neural/encoder.h"
 #include "utils/fastmath.h"
 #include "utils/random.h"
+#include "stockfish/reporting_table.h"
+
 
 namespace lczero {
 
@@ -875,6 +877,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
   if (!precached_node_) {
     precached_node_ = std::make_unique<Node>(nullptr, 0);
   }
+  history_.Trim(search_->played_history_.GetLength());
 
   SharedMutex::Lock lock(search_->nodes_mutex_);
 
@@ -906,10 +909,12 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
         IncrementNInFlight(node->GetParent(), search_->root_node_,
                            collision_limit - 1);
       }
+      history_.Trim(search_->played_history_.GetLength());
       return NodeToProcess::Collision(node, depth, collision_limit);
     }
     // Either terminal or unexamined leaf node -- the end of this playout.
     if (node->IsTerminal() || !node->HasChildren()) {
+      history_.Trim(search_->played_history_.GetLength());
       return NodeToProcess::Visit(node, depth);
     }
     Node* possible_shortcut_child = node->GetCachedBestChild();
@@ -934,6 +939,12 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
     float second_best = std::numeric_limits<float>::lowest();
     int possible_moves = 0;
     const float fpu = GetFpu(params_, node, is_root_node);
+
+
+    lczero::optional<ABTableEntry> movelist = reporting::get_ab_entry(history_.Last().CompPos());
+    bool flipped = history_.Last().IsBlackToMove();
+    reporting::set_path_chosen(bool(movelist));
+
     for (auto child : node->Edges()) {
       if (is_root_node) {
         // If there's no chance to catch up to the current best node with
@@ -953,6 +964,16 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
         }
         ++possible_moves;
       }
+
+      //if ab searching does not report this move as promising, don't search it
+      CompareableMove comp_move(child.GetMove(flipped).as_string());
+      if(movelist
+              && movelist.value().moves.size()
+              && movelist.value().search_depth >= 5
+              && !contains(movelist.value().moves,comp_move)){
+         continue;
+      }
+
       const float Q = child.GetQ(fpu);
       const float score = child.GetU(puct_mult) + Q;
       if (score > best) {
@@ -980,6 +1001,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
       second_best_edge.Reset();
     }
 
+    history_.Append(best_edge.GetMove());
     if (is_root_node && possible_moves <= 1 && !search_->limits_.infinite) {
       // If there is only one move theoretically possible within remaining time,
       // output it.
@@ -1331,6 +1353,22 @@ void SearchWorker::DoBackupUpdateSingleNode(
   search_->total_playouts_ += node_to_process.multivisit;
   search_->cum_depth_ += node_to_process.depth * node_to_process.multivisit;
   search_->max_depth_ = std::max(search_->max_depth_, node_to_process.depth);
+
+
+  history_.Trim(search_->played_history_.GetLength());
+  CompareableMoveList movelist;
+  for (int orig_idx = 0; orig_idx < ordered_node_stack.size(); orig_idx++) {
+       Node * cur_node = ordered_node_stack[orig_idx];
+       if(cur_node != search_->root_node_){
+           Edge * e = cur_node->GetOwnEdge();
+           std::string movestr = e->GetMove(history_.IsBlackToMove()).as_string();
+           movelist.push_back(CompareableMove(movestr));
+           history_.Append(e->GetMove());
+       }
+       CompareablePosition comp_pos = history_.Last().CompPos();
+       reporting::set_mcts_entry(comp_pos,movelist,cur_node->GetN());
+   }
+   history_.Trim(search_->played_history_.GetLength());
 }  // namespace lczero
 
 // 7. Update the Search's status and progress information.

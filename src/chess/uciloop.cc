@@ -39,6 +39,7 @@
 #include "utils/logging.h"
 #include "utils/string.h"
 #include "version.h"
+#include "ab_engine.h"
 
 namespace lczero {
 
@@ -190,6 +191,9 @@ bool UciLoop::DispatchCommand(
     UCIGOOPTION(nodes);
     UCIGOOPTION(movetime);
 #undef UCIGOOPTION
+
+    ab_engine::run_go_command();
+
     CmdGo(go_params);
   } else if (command == "stop") {
     CmdStop();

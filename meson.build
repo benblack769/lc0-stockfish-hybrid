@@ -121,6 +121,27 @@ files += [
   'src/utils/string.cc',
   'src/utils/transpose.cc',
   'src/utils/weights_adapter.cc',
+  'src/stockfish/benchmark.cpp',
+  'src/stockfish/bitbase.cpp',
+  'src/stockfish/bitboard.cpp',
+  'src/stockfish/endgame.cpp',
+  'src/stockfish/evaluate.cpp',
+  'src/stockfish/material.cpp',
+  'src/stockfish/misc.cpp',
+  'src/stockfish/movegen.cpp',
+  'src/stockfish/movepick.cpp',
+  'src/stockfish/pawns.cpp',
+  'src/stockfish/position.cpp',
+  'src/stockfish/psqt.cpp',
+  'src/stockfish/reporting_table.cpp',
+  'src/stockfish/search.cpp',
+  'src/stockfish/sf_thread_main.cpp',
+  'src/stockfish/syzygy/tbprobe.cpp',
+  'src/stockfish/thread.cpp',
+  'src/stockfish/timeman.cpp',
+  'src/stockfish/tt.cpp',
+  'src/stockfish/uci.cpp',
+  'src/stockfish/ucioption.cpp',
 ]
 includes += include_directories('src')
 
@@ -245,7 +266,7 @@ if get_option('build_backends')
         ispc_extra_args += ['--pic']
         outputnames = [ '@BASENAME@.o']
         if not ispc_native_only
-          outputnames += ['@BASENAME@_sse2.o', '@BASENAME@_sse4.o', 
+          outputnames += ['@BASENAME@_sse2.o', '@BASENAME@_sse4.o',
                            '@BASENAME@_avx.o', '@BASENAME@_avx11.o',
                            '@BASENAME@_avx2.o' ]
         endif
@@ -472,7 +493,7 @@ if get_option('gtest') and gtest.found()
     include_directories: includes, link_with: lc0_lib, dependencies: gtest
   ), args: '--gtest_output=xml:syzygy.xml', timeout: 90)
 
-  test('EncodePositionForNN', 
+  test('EncodePositionForNN',
     executable('encoder_test', 'src/neural/encoder_test.cc',
     include_directories: includes, link_with: lc0_lib, dependencies: gtest
   ), args: '--gtest_output=xml:encoder.xml', timeout: 90)
