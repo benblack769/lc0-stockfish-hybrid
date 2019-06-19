@@ -34,9 +34,15 @@ namespace lczero {
 template <class T>
 class optional {
  public:
+    optional(){reset();}
+    optional(const T & val):
+        value_(val),
+        has_value_(true){}
   operator bool() const { return has_value_; }
   constexpr const T& operator*() const& { return value_; }
   constexpr const T* operator->() const& { return &value_; }
+  const T& value() { return value_; }
+  bool has_value() { return has_value_; }
   optional<T>& operator=(const T& value) {
     value_ = value;
     has_value_ = true;

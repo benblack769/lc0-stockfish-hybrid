@@ -1355,6 +1355,13 @@ void SearchWorker::DoBackupUpdateSingleNode(
   search_->max_depth_ = std::max(search_->max_depth_, node_to_process.depth);
 
 
+    std::vector<Node *> ordered_node_stack;
+
+    for (Node* n = node_to_process.node; n != search_->root_node_->GetParent();
+     n = n->GetParent()) {
+         ordered_node_stack.push_back(n);
+    }
+    std::reverse(ordered_node_stack.begin(),ordered_node_stack.end());
   history_.Trim(search_->played_history_.GetLength());
   CompareableMoveList movelist;
   for (int orig_idx = 0; orig_idx < ordered_node_stack.size(); orig_idx++) {

@@ -163,7 +163,7 @@ class ChessBoard {
     return their_pieces_ - pawns() - their_king_ - rooks_ - bishops_;
   }
   BitBoard knights() const {
-    return our_knights() + their_knights();
+    return our_knights() | their_knights();
   }
   BitBoard our_king() const { return 1ull << our_king_.as_int(); }
   BitBoard their_king() const { return 1ull << their_king_.as_int(); }
