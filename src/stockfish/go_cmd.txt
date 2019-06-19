@@ -1,0 +1,2 @@
+setoption name threads value 8
+go nodes 100000000
