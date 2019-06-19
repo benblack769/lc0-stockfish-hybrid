@@ -877,9 +877,9 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
   if (!precached_node_) {
     precached_node_ = std::make_unique<Node>(nullptr, 0);
   }
-  history_.Trim(search_->played_history_.GetLength());
 
   SharedMutex::Lock lock(search_->nodes_mutex_);
+  history_.Trim(search_->played_history_.GetLength());
 
   // Fetch the current best root node visits for possible smart pruning.
   const int64_t best_node_n = search_->current_best_edge_.GetN();
@@ -909,15 +909,13 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
         IncrementNInFlight(node->GetParent(), search_->root_node_,
                            collision_limit - 1);
       }
-      history_.Trim(search_->played_history_.GetLength());
       return NodeToProcess::Collision(node, depth, collision_limit);
     }
     // Either terminal or unexamined leaf node -- the end of this playout.
     if (node->IsTerminal() || !node->HasChildren()) {
-      history_.Trim(search_->played_history_.GetLength());
       return NodeToProcess::Visit(node, depth);
     }
-    Node* possible_shortcut_child = node->GetCachedBestChild();
+    /*Node* possible_shortcut_child = node->GetCachedBestChild();
     if (possible_shortcut_child) {
       // Add two here to reverse the conservatism that goes into calculating the
       // remaining cache visits.
@@ -927,7 +925,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
       node = possible_shortcut_child;
       node_already_updated = true;
       continue;
-    }
+  }*/
     node_already_updated = false;
 
     // If we fall through, then n_in_flight_ has been incremented but this
@@ -941,7 +939,8 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
     const float fpu = GetFpu(params_, node, is_root_node);
 
 
-    lczero::optional<ABTableEntry> movelist = reporting::get_ab_entry(history_.Last().CompPos());
+    CompareablePosition comp_pos = history_.Last().CompPos();
+    lczero::optional<ABTableEntry> movelist = reporting::get_ab_entry(comp_pos);
     bool flipped = history_.Last().IsBlackToMove();
     reporting::set_path_chosen(bool(movelist));
 
@@ -972,7 +971,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
               && movelist.value().search_depth >= 5
               && !contains(movelist.value().moves,comp_move)){
          continue;
-      }
+     }
 
       const float Q = child.GetQ(fpu);
       const float score = child.GetU(puct_mult) + Q;
@@ -1364,7 +1363,7 @@ void SearchWorker::DoBackupUpdateSingleNode(
     std::reverse(ordered_node_stack.begin(),ordered_node_stack.end());
   history_.Trim(search_->played_history_.GetLength());
   CompareableMoveList movelist;
-  for (int orig_idx = 0; orig_idx < ordered_node_stack.size(); orig_idx++) {
+  for (size_t orig_idx = 0; orig_idx < ordered_node_stack.size(); orig_idx++) {
        Node * cur_node = ordered_node_stack[orig_idx];
        if(cur_node != search_->root_node_){
            Edge * e = cur_node->GetOwnEdge();

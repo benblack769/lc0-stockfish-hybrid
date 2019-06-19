@@ -32,6 +32,7 @@
 #include "utils/commandline.h"
 #include "utils/logging.h"
 #include "version.h"
+#include "ab_engine.h"
 
 int main(int argc, const char** argv) {
   LOGFILE << "Lc0 started.";
@@ -39,6 +40,8 @@ int main(int argc, const char** argv) {
   CERR << "|   _ | |";
   CERR << "|_ |_ |_| v" << GetVersionStr() << " built " << __DATE__;
   using namespace lczero;
+
+  ab_engine::start_engine();
 
   InitializeMagicBitboards();
 

@@ -142,6 +142,7 @@ files += [
   'src/stockfish/tt.cpp',
   'src/stockfish/uci.cpp',
   'src/stockfish/ucioption.cpp',
+  'src/ab_engine.cc',
 ]
 includes += include_directories('src')
 

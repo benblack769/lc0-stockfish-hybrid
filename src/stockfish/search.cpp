@@ -479,7 +479,7 @@ void Thread::search() {
               if(bestValue >= VALUE_MATE_IN_MAX_PLY){
                   Move mate_move = rootMoves[0].pv[0];
                   CompareableMove comp_mate_move(UCI::move(mate_move,rootPos.is_chess960()));
-                  reporting::set_mate_move(comp_mate_move);
+                  //reporting::set_mate_move(comp_mate_move);
                   //only set best 2 moves
                   std::vector<Move> short_path = rootMoves[0].pv;
                   short_path.resize(1);

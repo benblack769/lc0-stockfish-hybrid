@@ -21,6 +21,8 @@
 #include <iostream>
 #include "src/chess/bitboard.h"
 #include "src/chess/board.h"
+#include "src/chess/position.h"
+#include "src/stockfish/position.h"
 
 namespace lczero {
 
@@ -72,23 +74,26 @@ TEST(ChessBoard, CompareableMoveConsistent) {
     EXPECT_EQ(move3, CompareableMove(move3).to_string());
     EXPECT_EQ(move4, CompareableMove(move4).to_string());
 }
-/*TEST(ChessBoard, CompareablePositionConsistent) {
+TEST(ChessBoard, CompareablePositionConsistent) {
   ChessBoard board;
 
-  const char* complex_pos =
-      "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
-  board.SetFromFen(complex_pos);
+  //const char* complex_pos =
+//      "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+  board.SetFromFen(ChessBoard::kStartposFen);
   PositionHistory hist;
   hist.Reset(board,0,0);
   hist.Append(Move("e2e4"));
 
-  CompareablePosition pos = board.CompPos();
-  std::cout << pos.enpassant << std::endl;
-  std::cout << pos.enpassant << std::endl;
-  ChessBoard newboard = hist.Last().GetBoard();
+  CompareablePosition pos = hist.Last().CompPos();
+  :: Position sf_pos;
+  sf_pos.set(ChessBoard::kStartposFen,)
+  //sf_pos.set()
+ // std::cout << pos.enpassant << std::endl;
+ // std::cout << pos.enpassant << std::endl;
+ // ChessBoard newboard = hist.Last().GetBoard();
 
   EXPECT_TRUE(board.en_passant().as_int());
-}*/
+}
 
 namespace {
 int Perft(const ChessBoard& board, int max_depth, bool dump = false,

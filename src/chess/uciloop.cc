@@ -132,6 +132,15 @@ void UciLoop::RunLoop() {
     LOGFILE << ">> " << line;
     try {
       auto command = ParseCommand(line);
+      if(command.first == "go"){
+          ab_engine::run_command("go infinite");
+      }
+      else{
+          ab_engine::run_command(line);
+      }
+      if(command.first == "setoption"){
+         continue;
+      }
       // Ignore empty line.
       if (command.first.empty()) continue;
       if (!DispatchCommand(command.first, command.second)) break;
@@ -192,8 +201,6 @@ bool UciLoop::DispatchCommand(
     UCIGOOPTION(movetime);
 #undef UCIGOOPTION
 
-    ab_engine::run_go_command();
-
     CmdGo(go_params);
   } else if (command == "stop") {
     CmdStop();
@@ -236,6 +243,7 @@ void UciLoop::SendBestMove(const BestMoveInfo& move) {
   if (move.game_id != -1) res += " gameid " + std::to_string(move.game_id);
   if (move.is_black)
     res += " side " + std::string(*move.is_black ? "black" : "white");
+  ab_engine::run_command("stop");//stops execution of stockfish when bestmove is reached.
   SendResponse(res);
 }
 

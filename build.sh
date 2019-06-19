@@ -27,9 +27,9 @@ NINJA=$(awk '/ninja/ {ninja=$4} END {print ninja}' meson-logs/meson-log.txt)
 
 if [ -n "${INSTALL_PREFIX}" ]
 then
-  ${NINJA} install
+  ninja install
 else
-  ${NINJA}
+  ninja
 fi
 
 popd
