@@ -5,6 +5,7 @@ import chess
 import chess.pgn
 import os
 import multiprocessing
+import json
 
 
 def get_bestmove(file,outfile):
@@ -80,16 +81,16 @@ def terminal_result(moves):
 
 
 class Engine:
-    def __init__(self,name,process,read_pipe,write_pipe,game_idx):
-        self.name = name
+    def __init__(self,engine_info,process,read_pipe,write_pipe,game_idx):
+        self.name = engine_info['name']
+        self.info = engine_info
+        self.exec_path = engine_info['engine_path']
         self.process = process
         self.read_pipe = read_pipe
         self.write_pipe = write_pipe
-        thread_string = "setoption name Threads value {}\n".format(multiprocessing.cpu_count())
-        hash_string = "setoption name Hash value {}\n".format(1024*6+256)
-        self.write_pipe.write(hash_string)
-        self.write_pipe.write(thread_string)
-        stdoutfname = "games/"+str(game_idx)+name.replace("/","").replace(".","") + ".txt"
+        for option in engine_info['options']:
+            self.write_pipe.write(option+"\n")
+        stdoutfname = "games/"+str(game_idx)+self.name + ".txt"
         self.stdoutfile = open(stdoutfname,'a')
 
     def make_move(self,movelist,timer):
@@ -140,7 +141,7 @@ def board_to_pgn(e1,e2,board,result,write_file,write_idx):
     #write_file.write(repr(game))
     #return
 
-def create_engines(e1name,e2name,game_idx):
+def create_engines(e1info,e2info,game_idx):
     read1_fifo = "read1.pipe"
     read2_fifo = "read2.pipe"
     write1_fifo = "write1.pipe"
@@ -156,16 +157,16 @@ def create_engines(e1name,e2name,game_idx):
             os.remove(fifo)
         os.mkfifo(fifo)
 
-    eng1_proc = subprocess.Popen("exec {} < {} > {}".format(e1name,write1_fifo,read1_fifo),shell=True)
-    eng2_proc = subprocess.Popen("exec {} < {} > {}".format(e2name,write2_fifo,read2_fifo),shell=True)
+    eng1_proc = subprocess.Popen("exec {} < {} > {}".format(e1info['engine_path'],write1_fifo,read1_fifo),shell=True)
+    eng2_proc = subprocess.Popen("exec {} < {} > {}".format(e2info['engine_path'],write2_fifo,read2_fifo),shell=True)
     #eng2_proc = subprocess.Popen([e2name],stdin=open(write2_fifo),stdout=open(read2_fifo,'w'))
     write1 = open(write1_fifo,'w')
     write2 = open(write2_fifo,'w')
     read1 = open(read1_fifo,'r')
     read2 = open(read2_fifo,'r')
 
-    engine1 = Engine(e1name,eng1_proc,read1,write1,game_idx)
-    engine2 = Engine(e2name,eng2_proc,read2,write2,game_idx)
+    engine1 = Engine(e1info,eng1_proc,read1,write1,game_idx)
+    engine2 = Engine(e2info,eng2_proc,read2,write2,game_idx)
 
     return engine1,engine2
 
@@ -176,7 +177,7 @@ def process_game(eng1,eng2,game_idx):
     prev_eng = eng2
 
     starttime = 15*60*1000
-    inctime = 8*1000
+    inctime = 10*1000
 
     sw = starttime
     sb = starttime
@@ -197,19 +198,19 @@ def process_game(eng1,eng2,game_idx):
     white_turn = True
 
     while not board.is_game_over(claim_draw=True):
-        finished = False
-        while not finished:
+        while True:
             try:
                 start = time.time()
                 move = cur_eng.make_move(moves,timer)
                 end = time.time()
                 duration = int((end - start) * 1000)
-                finished = True
-            except (subprocess.CalledProcessError,RuntimeError,ValueError):
+                break
+            except (subprocess.CalledProcessError,RuntimeError,ValueError) as err:
                 cur_eng.close()
                 prev_eng.close()
-                cur_eng,prev_eng = create_engines(cur_eng.name,prev_eng.name,game_idx)
-
+                cur_eng,prev_eng = create_engines(cur_eng.info,prev_eng.info,game_idx)
+                with open("{}crash_log".format(game_idx),'a') as crash_log:
+                    crash_log.write("ERROR in {}:\n{}\n\n".format(cur_eng.name,str(err)))
 
         timer.update_time(white_turn,duration)
 
@@ -229,23 +230,23 @@ def process_game(eng1,eng2,game_idx):
 
     return (board,board.result(claim_draw=True))
 
-def run_game(e1name,e2name,outfilename,idx):
-    eng1,eng2 = create_engines(e1name,e2name,idx)
+def run_game(e1info,e2info,outfilename,idx):
+    eng1,eng2 = create_engines(e1info,e2info,idx)
 
     board,result = process_game(eng1,eng2,idx)
 
     with open(outfilename,'w') as outfile:
-        board_to_pgn(e1name,e2name,board,result,outfile,idx)
+        board_to_pgn(e1info['name'],e2info['name'],board,result,outfile,idx)
 
     eng1.close()
     eng2.close()
 
-def run_many(engine1,engine2,times):
+def run_many(engine1_info,engine2_info,times):
 
     os.mkdir("games")
 
-    white = engine1
-    black = engine2
+    white = engine1_info
+    black = engine2_info
     for game_idx in range(times):
         run_game(white, black, "games/{}".format(game_idx),game_idx)
 
@@ -260,8 +261,10 @@ def main():
     eng1_name = sys.argv[1]
     eng2_name = sys.argv[2]
 
+    eng1_info = json.load(open(eng1_name))
+    eng2_info = json.load(open(eng2_name))
 
-    run_many(eng1_name,eng2_name,100)
+    run_many(eng1_info,eng2_info,100)
 
 if __name__ == "__main__":
     main()

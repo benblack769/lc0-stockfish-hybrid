@@ -34,7 +34,7 @@ CompareableMoveList current_pv;
 GlobalCollectionInfo cur_glob_info;
 int curdepth = -1;
 
-static constexpr int MIN_SEARCH_DEPTH = 5;
+static constexpr int MIN_SEARCH_DEPTH = 2;
 static constexpr int MIN_SEARCH_NODES = 15;
 constexpr size_t INVALID_LOC = 0xff0000000000;
 
@@ -343,6 +343,13 @@ void set_ab_entry(CompareablePosition position, CompareableMoveList moves, int s
     global_lock.lock();
 
     ratio_heap.finished_ab_calc(position,moves,search_depth,microseconds_spent);
+
+    global_lock.unlock();
+}
+void set_found_mate(){
+    global_lock.lock();
+
+    cur_glob_info.found_mate = true;
 
     global_lock.unlock();
 }

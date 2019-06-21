@@ -297,8 +297,9 @@ void MainThread::search() {
   if (bestThread != this)
       sync_cout << UCI::pv(bestThread->rootPos, bestThread->completedDepth, -VALUE_INFINITE, VALUE_INFINITE) << sync_endl;
 
+  string res_name = reporting::has_found_mate() ? "bestmove " : "best_ab_move ";
   string res_str;
-  res_str += "best_ab_move " + UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
+  res_str += res_name + UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
 
   if (bestThread->rootMoves[0].pv.size() > 1 || bestThread->rootMoves[0].extract_ponder_from_tt(rootPos))
       res_str += " ponder " + UCI::move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
@@ -476,17 +477,9 @@ void Thread::search() {
           std::stable_sort(rootMoves.begin() + pvFirst, rootMoves.begin() + pvIdx + 1);
 
           if(rootMoves.size() && rootMoves[0].pv.size()){
+              set_pv_bestmoves(rootPos,rootMoves[0].pv,rootDepth);
               if(bestValue >= VALUE_MATE_IN_MAX_PLY){
-                  Move mate_move = rootMoves[0].pv[0];
-                  CompareableMove comp_mate_move(UCI::move(mate_move,rootPos.is_chess960()));
-                  //reporting::set_mate_move(comp_mate_move);
-                  //only set best 2 moves
-                  std::vector<Move> short_path = rootMoves[0].pv;
-                  short_path.resize(1);
-                  set_pv_bestmoves(rootPos,short_path,rootDepth);
-              }
-              else{
-                  set_pv_bestmoves(rootPos,rootMoves[0].pv,rootDepth);
+                  reporting::set_found_mate();
               }
           }
           if (    mainThread

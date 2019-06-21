@@ -51,6 +51,7 @@ struct ABTableEntry{
 struct GlobalCollectionInfo{
     int guided_choices=0;
     int not_guided_choices=0;
+    bool found_mate = false;
 };
 
 struct TimeHeapReturn{
@@ -81,6 +82,10 @@ lczero::optional<ABTableEntry> get_ab_entry(CompareablePosition position);
 void debug();
 GlobalCollectionInfo get_info();
 SmallHistogram move_histogram();
+void set_found_mate();
+inline bool has_found_mate(){
+    return get_info().found_mate;
+}
 //void print_results();
 //void save_to_file(std::string fname);
 //std::vector<std::pair<CompareablePosition,int>> pos_vals();

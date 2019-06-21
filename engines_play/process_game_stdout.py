@@ -84,7 +84,8 @@ def file_to_info_csv(filename):
 
     if not csv_collectors:
         raise RuntimeError("file had zero 'bestmove' lines")
-    csv_header = csv_collectors[1].header_names()
+    all_headers = [set(cv_collect.header_names()) for cv_collect in csv_collectors]
+    csv_header = list(set().union(*all_headers))
     csv_lines = [csv_header] + [col.orderd_values(csv_header) for col in csv_collectors]
     print(lines_to_csv(csv_lines))
 
