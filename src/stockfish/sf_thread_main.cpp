@@ -35,26 +35,7 @@ namespace PSQT {
   void init();
 }
 
-std::ifstream read_file_;
-//std::ofstream write_file_;
-
-const char * _read_pipename = "sf_write.pipe";
-//const char * _write_pipename = "sf_read.pipe";
-
-std::istream * _sf_read_in;
-//std::ostream * _sf_write_out;
-
-void create_stdin_pipe(){
-    read_file_.open(_read_pipename);
-    //write_file_.open(_write_pipename);
-    //_sf_write_out = &write_file_;
-    _sf_read_in = &read_file_;
-}
-
 void sf_thread_main() {
-
-  create_stdin_pipe();
-
   write_out << engine_info() << std::endl;
 
   UCI::init(Options);

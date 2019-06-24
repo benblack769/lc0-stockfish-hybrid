@@ -1,18 +1,14 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
-#include <unistd.h>
-#include <errno.h>
 #include <algorithm>
 #include <vector>
+#include <queue>
 #include <fstream>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <ext/stdio_filebuf.h>
+#include <mutex>
+#include <thread>
 #include "ab_engine.h"
 
-using namespace std;
 
 #define r_assert(val) { \
     if(!(val)){ \
@@ -20,32 +16,52 @@ using namespace std;
         exit(1); \
     } \
 }
+std::mutex line_lock;
 
-ofstream write_file;
-bool pipe_created = false;
+bool is_started = false;
+std::queue<std::string> line_queue;
 
-const char * write_pipename = "sf_write.pipe";
 
 void spawn_sf_main_thread();
 
 namespace ab_engine{
 
 void start_engine(){
-    r_assert(!pipe_created);
-    remove(write_pipename);
-    r_assert(mkfifo(write_pipename,0777) == 0);
+    line_lock.lock();
+    r_assert(!is_started);
 
     spawn_sf_main_thread();
-    write_file.open(write_pipename);
-    pipe_created = true;
+
+    is_started = true;
+    line_lock.unlock();
 }
 void run_command(std::string cmd){
-    r_assert(pipe_created);
-    if(cmd.back() != '\n'){
-        cmd.push_back('\n');
+    line_lock.lock();
+
+    r_assert(is_started);
+    if(cmd.back() == '\n'){
+        cmd.pop_back();
     }
-    write_file << cmd;
-    write_file.flush();
+    line_queue.push(cmd);
+
+    line_lock.unlock();
+}
+std::string get_command_line(){
+    const std::chrono::milliseconds sleep_time(10);
+    while(true){
+        line_lock.lock();
+        if(!line_queue.empty()){
+            break;
+        }
+        line_lock.unlock();
+        std::this_thread::sleep_for(sleep_time);
+    }
+    std::string res = line_queue.front();
+    line_queue.pop();
+
+    line_lock.unlock();
+
+    return res;
 }
 void run_go_command(){
     run_command("go infinite");
