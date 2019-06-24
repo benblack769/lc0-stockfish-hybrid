@@ -176,14 +176,14 @@ def process_game(eng1,eng2,game_idx):
     cur_eng = eng1
     prev_eng = eng2
 
-    starttime = 15*60*1000
-    inctime = 10*1000
+    starttime = 1*60*1000
+    inctime = 1*1000
 
     sw = starttime
     sb = starttime
     iw = inctime
     ib = inctime
-    mf = 6
+    mf = 1
     if "lc0" in eng1.name:
         sw *= mf
         iw *= mf

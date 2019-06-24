@@ -139,7 +139,10 @@ void UciLoop::RunLoop() {
           ab_engine::run_command(line);
       }
       if(command.first == "setoption"){
-         continue;
+          std::string optionname = GetOrEmpty(command.second, "name");
+          if(optionname == "Hash" || optionname == "Threads"){
+             continue;
+         }
       }
       // Ignore empty line.
       if (command.first.empty()) continue;

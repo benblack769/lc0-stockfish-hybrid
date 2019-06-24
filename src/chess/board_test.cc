@@ -86,7 +86,7 @@ TEST(ChessBoard, CompareablePositionConsistent) {
 
   CompareablePosition pos = hist.Last().CompPos();
   :: Position sf_pos;
-  sf_pos.set(ChessBoard::kStartposFen,)
+  //sf_pos.set(ChessBoard::kStartposFen,)
   //sf_pos.set()
  // std::cout << pos.enpassant << std::endl;
  // std::cout << pos.enpassant << std::endl;
