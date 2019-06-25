@@ -31,6 +31,7 @@
 #include "timeman.h"
 #include "tt.h"
 #include "uci.h"
+#include "ab_engine.h"
 #include "syzygy/tbprobe.h"
 
 using namespace std;
@@ -199,8 +200,9 @@ void UCI::loop(int argc, char* argv[]) {
       cmd += std::string(argv[i]) + " ";
 
   do {
-      if (argc == 1 && !getline(read_in, cmd)) // Block here waiting for input or EOF
-          cmd = "quit";
+      cmd = ab_engine::get_command_line();
+      //if (argc == 1 && !getline(read_in, cmd)) // Block here waiting for input or EOF
+     //      cmd = "quit";
 
       istringstream is(cmd);
 

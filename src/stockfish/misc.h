@@ -55,20 +55,10 @@ struct HashTable {
 private:
   std::vector<Entry> table = std::vector<Entry>(Size);
 };
-#ifdef PRINT_STDOUT
 
 #define write_out std::cout
 #define read_in std::cin
-//ruins write_out to create errors if it is used
-//#define cout asdlkjlskd
 
-#else
-
-#define write_out std::cout
-extern std::istream * _sf_read_in;
-#define read_in (*_sf_read_in)
-
-#endif
 
 
 enum SyncCout { IO_LOCK, IO_UNLOCK };
