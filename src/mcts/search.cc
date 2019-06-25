@@ -35,6 +35,8 @@
 #include <iterator>
 #include <sstream>
 #include <thread>
+#include <fstream>
+#include <unordered_set>
 
 #include "mcts/node.h"
 #include "neural/cache.h"
@@ -274,6 +276,77 @@ std::vector<std::string> Search::GetVerboseStats(Node* node,
   }
   return infos;
 }
+void print_str(std::ostream & outfile,std::string str){
+    outfile << '\"' << str << '\"';
+}
+void print_pair(std::ostream & outfile,std::string str1,std::string str2){
+    print_str(outfile,str1);
+    outfile << ':';
+    print_str(outfile,str2);
+}
+void print_pair_nostr(std::ostream & outfile,std::string str1,std::string str2){
+    print_str(outfile,str1);
+    outfile << ':' << str2;
+}
+void print_node(std::ostream & outfile,int id,int node_count,int ab_depth,bool black_move){
+    outfile << "{";
+    print_pair(outfile,"type","node");
+    outfile << ",";
+    print_pair_nostr(outfile,"node",std::to_string(id));
+    outfile << ",";
+    print_pair(outfile,"turn",black_move ? "black" : "white");
+    outfile << ",";
+    print_pair_nostr(outfile,"ab_depth",std::to_string(ab_depth));
+    outfile << ",";
+    print_pair_nostr(outfile,"node_count",std::to_string(node_count));
+    outfile << "},";
+}
+void print_edge(std::ostream & outfile,bool is_allowed,std::string name,int parent,int child){
+    outfile << "{";
+    print_pair(outfile,"type","edge");
+    outfile << ",";
+    print_pair_nostr(outfile,"is_allowed",std::to_string(is_allowed));
+    outfile << ",";
+    print_pair_nostr(outfile,"parent",std::to_string(parent));
+    outfile << ",";
+    print_pair_nostr(outfile,"child",std::to_string(child));
+    outfile << ",";
+    print_pair(outfile,"name",(name));
+    outfile << "},";
+}
+void recursive_graph_print(std::ostream & outfile,PositionHistory & history,Node * node, bool flipped,int & id_counter){
+    int my_idx = id_counter;
+    id_counter++;
+    if(!node){
+        print_node(outfile,my_idx,0,0,flipped);
+        return;
+    }
+    auto ab_options = reporting::get_ab_entry(history.Last().CompPos());
+    int mcts_depth = ab_options ? ab_options.value().search_depth : 0;
+    print_node(outfile,my_idx,node->GetN(),mcts_depth,flipped);
+    for(EdgeAndNode child : node->Edges()){
+        int child_idx = id_counter;
+        std::string move_name = child.GetMove(flipped).as_string();
+        CompareableMove cmp_move(move_name);
+        bool child_is_allowed = ab_options ? contains(ab_options.value().moves,cmp_move) : true;
+        print_edge(outfile,child_is_allowed,move_name,my_idx,child_idx);
+
+        history.Append(child.GetMove());
+        recursive_graph_print(outfile,history,child.node(),!flipped,id_counter);
+        history.Pop();
+    }
+}
+void print_graphvis(PositionHistory history,Node * root){
+    int id_counter = 0;
+    //unor
+    std::ofstream outfile ("graph.json");
+    outfile << "[";
+    recursive_graph_print(outfile,history,root,false,id_counter);
+    outfile << "{";
+    print_pair(outfile,"type","end");
+    outfile << "}";
+    outfile << "]\n";
+}
 
 void Search::SendMovesStats() const REQUIRES(counters_mutex_) {
   const bool is_black_to_move = played_history_.IsBlackToMove();
@@ -405,6 +478,7 @@ void Search::MaybeTriggerStop() {
     SendUciInfo();
     EnsureBestMoveKnown();
     SendMovesStats();
+    print_graphvis(this->played_history_,this->root_node_);
     best_move_callback_(
         {final_bestmove_.GetMove(played_history_.IsBlackToMove()),
          final_pondermove_.GetMove(!played_history_.IsBlackToMove())});

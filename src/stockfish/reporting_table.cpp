@@ -34,8 +34,8 @@ CompareableMoveList current_pv;
 GlobalCollectionInfo cur_glob_info;
 int curdepth = -1;
 
-static constexpr int MIN_SEARCH_DEPTH = 2;
-static constexpr int MIN_SEARCH_NODES = 15;
+static constexpr int MIN_SEARCH_DEPTH = 1;
+static constexpr int MIN_SEARCH_NODES = 3;
 constexpr size_t INVALID_LOC = 0xff0000000000;
 
 struct TableEntry{
