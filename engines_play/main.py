@@ -176,8 +176,8 @@ def process_game(eng1,eng2,game_idx):
     cur_eng = eng1
     prev_eng = eng2
 
-    starttime = 1*60*1000
-    inctime = 1*1000
+    starttime = 45*60*1000
+    inctime = 15*1000
 
     sw = starttime
     sb = starttime
@@ -209,7 +209,7 @@ def process_game(eng1,eng2,game_idx):
                 cur_eng.close()
                 prev_eng.close()
                 cur_eng,prev_eng = create_engines(cur_eng.info,prev_eng.info,game_idx)
-                with open("{}crash_log".format(game_idx),'a') as crash_log:
+                with open("games/{}crash_log".format(game_idx),'a') as crash_log:
                     crash_log.write("ERROR in {}:\n{}\n\n".format(cur_eng.name,str(err)))
 
         timer.update_time(white_turn,duration)
