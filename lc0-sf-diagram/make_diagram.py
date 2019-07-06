@@ -1,6 +1,7 @@
 import json
 import sys
 import random
+import math
 
 assert len(sys.argv) == 3,"need cutoff size, graph filename"
 cutoff = int(sys.argv[1])
@@ -24,15 +25,18 @@ for item in graph_data:
             remove_nodes.add(child)
 
 print("digraph G{")
+min_width = math.log(cutoff)
 for item in graph_data:
     if item['type'] == "node":
         shape = "box" if item['type'] == "black" else "oval"
         id = item['node']
-        label = item['node_count']
+        label = item['ab_depth']#""#item['node_count']
         if id in remove_nodes:
             continue
 
-        print('\t{id} [ shape={shape}, label="{label}" ]'.format(id=id,shape=shape,label=label))
+        width = math.log(item['node_count']) - min_width + 1
+
+        print('\t{id} [ shape={shape}, label="{label}" penwidth={width} ]'.format(id=id,shape=shape,label=label,width=width))
 
 for item in graph_data:
     if item['type'] == "edge":
