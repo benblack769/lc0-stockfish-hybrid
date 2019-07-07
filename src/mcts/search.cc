@@ -1372,7 +1372,8 @@ void SearchWorker::DoBackupUpdateSingleNode(
            history_.Append(e->GetMove());
        }
        CompareablePosition comp_pos = history_.Last().CompPos();
-       reporting::set_mcts_entry(comp_pos,movelist,cur_node->GetN());
+
+       reporting::set_mcts_entry(comp_pos,movelist,1);
    }
    history_.Trim(search_->played_history_.GetLength());
 }  // namespace lczero
