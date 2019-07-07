@@ -583,7 +583,7 @@ lczero::optional<CompareableMove> get_bestmove_from_tt(Position & pos){
    }
    return lczero::optional<CompareableMove>();
 }
-void calc_single_node(Position & pos, const Stack * stack_initted, Value minval, Value maxval, int calc_depth){
+void calc_single_node(Position & pos, const CompareablePosition & comp_pos, const Stack * stack_initted, Value minval, Value maxval, int calc_depth){
     constexpr int stack_size = MAX_PLY+7;
     Stack stack[stack_size];
     Stack * ss = stack + 4; // To reference from (ss-4) to (ss+2)
@@ -631,7 +631,7 @@ void calc_single_node(Position & pos, const Stack * stack_initted, Value minval,
         }
         pos.undo_move(move);
     }
-    reporting::set_ab_entry(pos.comp_pos(),all_ok_moves,new_depth_v,total_microseconds_spent);
+    reporting::set_ab_entry(comp_pos,all_ok_moves,new_depth_v,total_microseconds_spent);
 }
 void MCTSThread::search(){
     Stack stack[MAX_PLY+7], *ss = stack+4; // To reference from (ss-4) to (ss+2)
@@ -698,7 +698,7 @@ void MCTSThread::search(){
         //    std::cout << "rootcount: " <<   int(calc_pos.side_to_move() == cur_side_to_move) << std::endl;
         //    std::exit(1);
         //}
-        calc_single_node(calc_pos,stack,use_min_val,use_max_val,calc_pos_data.search_depth);
+        calc_single_node(calc_pos,calc_pos_data.pos,stack,use_min_val,use_max_val,calc_pos_data.search_depth);
 
         //std::cout << "calced node\n";
 

@@ -942,7 +942,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
     CompareablePosition comp_pos = history_.Last().CompPos();
     lczero::optional<ABTableEntry> movelist = reporting::get_ab_entry(comp_pos);
     bool flipped = history_.Last().IsBlackToMove();
-    reporting::set_path_chosen(bool(movelist));
+    reporting::set_path_chosen(bool(movelist) && movelist.value().search_depth >= 5);
 
     for (auto child : node->Edges()) {
       if (is_root_node) {
@@ -1372,7 +1372,8 @@ void SearchWorker::DoBackupUpdateSingleNode(
            history_.Append(e->GetMove());
        }
        CompareablePosition comp_pos = history_.Last().CompPos();
-       reporting::set_mcts_entry(comp_pos,movelist,cur_node->GetN());
+
+       reporting::set_mcts_entry(comp_pos,movelist,1);
    }
    history_.Trim(search_->played_history_.GetLength());
 }  // namespace lczero
