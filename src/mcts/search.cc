@@ -288,7 +288,7 @@ void print_pair_nostr(std::ostream & outfile,std::string str1,std::string str2){
     print_str(outfile,str1);
     outfile << ':' << str2;
 }
-void print_node(std::ostream & outfile,int id,int node_count,int ab_depth,bool black_move){
+void print_node(std::ostream & outfile,int id,int node_count,int ab_depth,int ab_time,bool black_move){
     outfile << "{";
     print_pair(outfile,"type","node");
     outfile << ",";
@@ -297,6 +297,8 @@ void print_node(std::ostream & outfile,int id,int node_count,int ab_depth,bool b
     print_pair(outfile,"turn",black_move ? "black" : "white");
     outfile << ",";
     print_pair_nostr(outfile,"ab_depth",std::to_string(ab_depth));
+    outfile << ",";
+    print_pair_nostr(outfile,"ab_time",std::to_string(ab_time));
     outfile << ",";
     print_pair_nostr(outfile,"node_count",std::to_string(node_count));
     outfile << "},";
@@ -318,12 +320,17 @@ void recursive_graph_print(std::ostream & outfile,PositionHistory & history,Node
     int my_idx = id_counter;
     id_counter++;
     if(!node){
-        print_node(outfile,my_idx,0,0,flipped);
+        print_node(outfile,my_idx,0,0,0,flipped);
         return;
     }
     auto ab_options = reporting::get_ab_entry(history.Last().CompPos());
-    int mcts_depth = ab_options ? ab_options.value().search_depth : 0;
-    print_node(outfile,my_idx,node->GetN(),mcts_depth,flipped);
+    int ab_depth = ab_options ? ab_options.value().search_depth : 0;
+    int ab_time = ab_options ? ab_options.value().ab_time : 0;
+    int mcts_nodes = ab_options ? ab_options.value().mcts_nodes : 0;
+    if(node->GetN() != mcts_nodes && node->GetN() > 5){
+    //    std::cout << node->GetN() << "\t" << mcts_nodes  << "\t" << ab_depth << '\n';
+    }
+    print_node(outfile,my_idx,node->GetN(),ab_depth,ab_time,flipped);
     for(EdgeAndNode child : node->Edges()){
         int child_idx = id_counter;
         std::string move_name = child.GetMove(flipped).as_string();
@@ -339,6 +346,7 @@ void recursive_graph_print(std::ostream & outfile,PositionHistory & history,Node
 void print_graphvis(PositionHistory history,Node * root){
     int id_counter = 0;
     //unor
+    std::cout << "Started!" << std::endl;
     std::ofstream outfile ("graph.json");
     outfile << "[";
     recursive_graph_print(outfile,history,root,false,id_counter);
@@ -346,6 +354,9 @@ void print_graphvis(PositionHistory history,Node * root){
     print_pair(outfile,"type","end");
     outfile << "}";
     outfile << "]\n";
+    outfile.close();
+    std::cout << "finished!" << std::endl;
+    exit(0);
 }
 
 void Search::SendMovesStats() const REQUIRES(counters_mutex_) {
@@ -1044,7 +1055,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
               && movelist.value().moves.size()
               && movelist.value().search_depth >= 5
               && !contains(movelist.value().moves,comp_move)){
-         continue;
+        // continue;
      }
 
       const float Q = child.GetQ(fpu);
@@ -1446,7 +1457,7 @@ void SearchWorker::DoBackupUpdateSingleNode(
            history_.Append(e->GetMove());
        }
        CompareablePosition comp_pos = history_.Last().CompPos();
-       reporting::set_mcts_entry(comp_pos,movelist,cur_node->GetN());
+       reporting::set_mcts_entry(comp_pos,movelist,1);//cur_node->GetN());
    }
    history_.Trim(search_->played_history_.GetLength());
 }  // namespace lczero

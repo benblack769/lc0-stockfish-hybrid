@@ -28,13 +28,14 @@ print("digraph G{")
 min_width = math.log(cutoff)
 for item in graph_data:
     if item['type'] == "node":
-        shape = "box" if item['type'] == "black" else "oval"
+        shape = "oval"#"box" if item['type'] == "black" else "oval"
         id = item['node']
-        label = item['ab_depth']#""#item['node_count']
+        color = "red" if item['turn'] == "black" else "blue"
+        label = str(item['ab_depth']) #+ "--" + "{:,}".format(item['ab_time'])#""#item['node_count']
         if id in remove_nodes:
             continue
 
-        width = math.log(item['node_count']) - min_width + 1
+        width = (math.log(item['node_count']) - min_width + 1)#/20
 
         print('\t{id} [ shape={shape}, label="{label}" penwidth={width} ]'.format(id=id,shape=shape,label=label,width=width))
 
@@ -47,6 +48,6 @@ for item in graph_data:
             continue
 
         name = item['name']
-        print('\t{parent} -> {child} [ color={color}, label="{name}" ]'.format(parent=parent,child=child,color=color,name=name))
+        print('\t{parent} -> {child} [ color={color}, label="{name}" arrowhead="none" ]'.format(parent=parent,child=child,color=color,name=name))
 
 print("}")

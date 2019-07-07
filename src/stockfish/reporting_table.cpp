@@ -43,8 +43,8 @@ struct TableEntry{
     CompareableMoveList moves_to_pos;
     CompareableMove bestmove;
     int bestmove_depth=-1;
-    int64_t ab_time=0;
     size_t item_location=INVALID_LOC;//pointer to heap location
+    int64_t ab_time=0;
     int nodes_searched=0;
     int calced_search_depth=MIN_SEARCH_DEPTH-1;
     bool is_calulating=false;
@@ -55,7 +55,9 @@ struct TimeRatioItem{
     int64_t ab_time;
     int mcts_nodes;
     bool operator < (const TimeRatioItem & o)const{
-        return (ab_time * o.mcts_nodes) > (mcts_nodes * o.ab_time);
+        return ab_time && o.ab_time ?
+            (ab_time * o.mcts_nodes) > (mcts_nodes * o.ab_time) :
+            ab_time > o.ab_time;
     }
 };
 
@@ -80,7 +82,7 @@ public:
                    !contains(return_moves,entry.bestmove)){
                       return_moves.push_back(entry.bestmove);
             }
-            return lczero::optional<ABTableEntry>(ABTableEntry{return_moves,iter->second.calced_search_depth});
+            return lczero::optional<ABTableEntry>(ABTableEntry{return_moves,entry.calced_search_depth,entry.ab_time,entry.nodes_searched});
         }
     }
     //saves some search info, but clears it for next move
@@ -93,16 +95,16 @@ public:
         if(h_iter == item_location.end()){
             throw runtime_error("got position without location");
         }
-        if(pos.ep_diff(h_iter->first)){
-            return;//don't change value of node if en passant differnet
-        }
+        //if(pos.ep_diff(h_iter->first)){
+        //    return;//don't change value of node if en passant differnet
+        //}
         TableEntry & entry = h_iter->second;
-        entry.calced_search_depth = search_depth;
         entry.moves = moves;
         entry.ab_time += ab_time_spent;
         if(entry.calced_search_depth != search_depth){
             throw runtime_error("didn't increment search_depth properly");
         }
+        entry.calced_search_depth = search_depth;
         if(!entry.is_calulating){
             throw runtime_error("finished without starting");
         }
@@ -120,16 +122,16 @@ public:
         //}
     }
     void update_mcts(CompareablePosition pos, CompareableMoveList moves_to_pos, int mcts_nodes){
-        if(mcts_nodes < MIN_SEARCH_NODES){
-            return;
-        }
+        //if(mcts_nodes < MIN_SEARCH_NODES){
+        //    return;
+        //}
         TableEntry & entry = item_location[pos];
         auto h_iter = item_location.find(pos);
-        if(pos.ep_diff(h_iter->first)){
-            return;//don't change value of node if en passant differnet
-        }
+        //if(pos.ep_diff(h_iter->first)){
+        //    return;//don't change value of node if en passant differnet
+        //}
         entry.moves_to_pos = moves_to_pos;
-        entry.nodes_searched = mcts_nodes;
+        entry.nodes_searched += mcts_nodes;
         if(entry.is_calulating){
             return;
         }
@@ -158,9 +160,10 @@ public:
         TableEntry & entry = heap.front().hash_ptr->second;
         r_assert2(entry.item_location == 0);
         entry.is_calulating = true;
+        entry.calced_search_depth++;
         pop_heap();
         entry.item_location = INVALID_LOC;//invalid location
-        return TimeHeapReturn {pos,entry.moves_to_pos,entry.calced_search_depth+1};
+        return TimeHeapReturn {pos,entry.moves_to_pos,entry.calced_search_depth};
     }
     SmallHistogram move_histogram(){
         SmallHistogram hist;
@@ -180,9 +183,9 @@ public:
         if(h_iter == item_location.end()){
             return;
         }
-        if(pos.ep_diff(h_iter->first)){
-            return;//don't change value of node if en passant differnet
-        }
+        //if(pos.ep_diff(h_iter->first)){
+        //    return;//don't change value of node if en passant differnet
+        //}
         TableEntry & entry = h_iter->second;
         if(entry.bestmove_depth < search_depth){
             entry.bestmove_depth = search_depth;
@@ -205,15 +208,21 @@ private:
     }
     void raarange_down(size_t loc){
         TimeRatioItem & cur_item = heap.at(loc);
-        for(size_t new_loc = loc*2+1; new_loc <= loc*2+2; new_loc++){
-            if(new_loc >= heap.size()){
-                return;
+        size_t new_loc1 = loc*2+1;
+        size_t new_loc2 = loc*2+2;
+        if(new_loc1 >= heap.size()){
+            return;
+        }
+        TimeRatioItem & next_item1 = heap.at(new_loc1);
+        if(cur_item < next_item1){
+            if(new_loc2 >= heap.size() || heap[new_loc2] < next_item1){
+                tr_swap(cur_item,next_item1);
+                raarange_down(new_loc1);
             }
-            TimeRatioItem & next_item = heap.at(new_loc);
-            if(cur_item < next_item){
-                tr_swap(cur_item,next_item);
-                raarange_down(new_loc);
-                return;
+            else{
+                TimeRatioItem & next_item2 = heap.at(new_loc2);
+                tr_swap(cur_item,next_item2);
+                raarange_down(new_loc2);
             }
         }
     }
@@ -243,8 +252,8 @@ bool CompareablePosition::operator == (const CompareablePosition & other) const 
     return std::equal(byTypeBB,byTypeBB+PIECE_TYPE_NB,other.byTypeBB) &&
            std::equal(byColorBB,byColorBB+COLOR_NB,other.byColorBB) &&
            active_color == other.active_color &&
-           castlingRights == other.castlingRights;// &&
-           //enpassant == other.enpassant;
+           castlingRights == other.castlingRights &&
+           enpassant == other.enpassant;
 }
 uint64_t CompareablePosition::Hash() const {
     using namespace lczero;
@@ -258,7 +267,7 @@ uint64_t CompareablePosition::Hash() const {
 
     hash = HashCat(hash,active_color);
     hash = HashCat(hash,castlingRights);
-    //hash = HashCat(hash,enpassant);
+    hash = HashCat(hash,enpassant);
 
     return hash;
 }

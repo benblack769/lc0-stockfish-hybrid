@@ -47,6 +47,8 @@ namespace std {
 struct ABTableEntry{
     CompareableMoveList moves;
     int search_depth;
+    int ab_time;
+    int mcts_nodes;
 };
 struct GlobalCollectionInfo{
     int guided_choices=0;
