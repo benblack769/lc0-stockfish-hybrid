@@ -889,6 +889,10 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
   uint16_t depth = 0;
   bool node_already_updated = true;
 
+
+  reporting::Parameters bounds = reporting::get_parameters();
+  int sf_min_depth = bounds.min_ab_depth_valid;
+
   while (true) {
     // First, terminate if we find collisions or leaf nodes.
     // Set 'node' to point to the node that was picked on previous iteration,
@@ -968,7 +972,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
       CompareableMove comp_move(child.GetMove(flipped).as_string());
       if(movelist
               && movelist.value().moves.size()
-              && movelist.value().search_depth >= 5
+              && movelist.value().search_depth >= sf_min_depth
               && !contains(movelist.value().moves,comp_move)){
          continue;
      }

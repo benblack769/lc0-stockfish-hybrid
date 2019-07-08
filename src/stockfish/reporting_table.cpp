@@ -26,16 +26,18 @@ using namespace std;
 
 
 mutex global_lock;
+mutex params_lock;
 
 
 mutex bestval_mutex;
 Value curbestval;
 CompareableMoveList current_pv;
+reporting::Parameters global_params;
 GlobalCollectionInfo cur_glob_info;
 int curdepth = -1;
 
 static constexpr int MIN_SEARCH_DEPTH = 2;
-static constexpr int MIN_SEARCH_NODES = 15;
+static constexpr int MIN_SEARCH_NODES = 3;
 constexpr size_t INVALID_LOC = 0xff0000000000;
 
 struct TableEntry{
@@ -328,6 +330,17 @@ GlobalCollectionInfo get_info(){
     global_lock.lock();
     GlobalCollectionInfo res = cur_glob_info;
     global_lock.unlock();
+    return res;
+}
+void set_parameters(Parameters params){
+    params_lock.lock();
+    global_params = params;
+    params_lock.unlock();
+}
+Parameters get_parameters(){
+    params_lock.lock();
+    Parameters res = global_params;
+    params_lock.unlock();
     return res;
 }
 TimeHeapReturn pop_calc_position(){

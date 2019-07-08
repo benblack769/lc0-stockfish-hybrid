@@ -26,6 +26,7 @@
 */
 
 #include "mcts/params.h"
+#include "stockfish/reporting_table.h"
 
 namespace lczero {
 
@@ -186,6 +187,18 @@ const OptionId SearchParams::kKLDGainAverageInterval{
     "kldgain-average-interval", "KLDGainAverageInterval",
     "Used to decide how frequently to evaluate the average KLDGainPerNode to "
     "check the MinimumKLDGainPerNode, if specified."};
+const OptionId SearchParams::kStockfishMoverTolerance{
+    "stockfish-mover-tolerance", "StockfishMoverTolerance",
+    "How far move stockfish evals can be from root stockfish evals for the "
+    "moving player (in centipawns) for MCTS to consider the moves."};
+const OptionId SearchParams::kStockfishOpponentTolerance{
+    "stockfish-opponent-tolerance", "StockfishOpponentTolerance",
+    "How far move stockfish evals can be from root stockfish evals for the "
+    "opposing player (in centipawns) for MCTS to consider the moves."};
+const OptionId SearchParams::kMinABDepthValid{
+    "min-ab-depth-valid", "MinABDepthValid",
+    "How deep stockfish eval needs to get before the MCTS algorithm starts  "
+    "eliminating the move Stockfish recomends to remove."};
 
 void SearchParams::Populate(OptionsParser* options) {
   // Here the uci optimized defaults" are set.
@@ -228,6 +241,10 @@ void SearchParams::Populate(OptionsParser* options) {
   options->Add<IntOption>(kKLDGainAverageInterval, 1, 10000000) = 100;
   options->Add<FloatOption>(kMinimumKLDGainPerNode, 0.0f, 1.0f) = 0.0f;
 
+  options->Add<IntOption>(kStockfishMoverTolerance, 1, 400) = 45;
+  options->Add<IntOption>(kStockfishOpponentTolerance, 1, 400) = 45;
+  options->Add<IntOption>(kMinABDepthValid, 1, 40) = 5;
+
   options->HideOption(kLogLiveStatsId);
 }
 
@@ -258,6 +275,14 @@ SearchParams::SearchParams(const OptionsDict& options)
       kSyzygyFastPlay(options.Get<bool>(kSyzygyFastPlayId.GetId())),
       kHistoryFill(
           EncodeHistoryFill(options.Get<std::string>(kHistoryFillId.GetId()))),
-      kMiniBatchSize(options.Get<int>(kMiniBatchSizeId.GetId())) {}
+      kMiniBatchSize(options.Get<int>(kMiniBatchSizeId.GetId())) {
+          //set parameters that are accessed via reporting interface
+            reporting::Parameters params = {
+                options.Get<int>(kStockfishMoverTolerance.GetId()),
+                options.Get<int>(kStockfishOpponentTolerance.GetId()),
+                options.Get<int>(kMinABDepthValid.GetId())
+            };
+            reporting::set_parameters(params);
+      }
 
 }  // namespace lczero

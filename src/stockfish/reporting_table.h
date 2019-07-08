@@ -72,6 +72,11 @@ struct SmallHistogram{
 };
 std::ostream & operator << (std::ostream & os,const SmallHistogram & sh);
 namespace reporting{
+struct Parameters{
+    int stockfish_mover_tolerance;
+    int stockfish_opponent_tolerance;
+    int min_ab_depth_valid;
+};
 void clear();
 //bool should_set_entry(Key key, int depth,int search_depth,Value val);
 void set_ab_entry(CompareablePosition position,CompareableMoveList moves,int search_depth, int64_t microseconds_spent);
@@ -80,6 +85,8 @@ void set_bestmove_if_exists(CompareablePosition position, CompareableMove bestmo
 TimeHeapReturn pop_calc_position();
 lczero::optional<ABTableEntry> get_ab_entry(CompareablePosition position);
 void debug();
+void set_parameters(Parameters params);
+Parameters get_parameters();
 GlobalCollectionInfo get_info();
 SmallHistogram move_histogram();
 void set_found_mate();

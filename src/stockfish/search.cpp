@@ -633,6 +633,9 @@ void calc_single_node(Position & pos, const CompareablePosition & comp_pos, cons
     }
     reporting::set_ab_entry(comp_pos,all_ok_moves,new_depth_v,total_microseconds_spent);
 }
+int cp_to_stockfish_eval(int cp){
+    return (cp * PawnValueEg) / 100;
+}
 void MCTSThread::search(){
     Stack stack[MAX_PLY+7], *ss = stack+4; // To reference from (ss-4) to (ss+2)
     std::memset(ss-4, 0, 7 * sizeof(Stack));
@@ -668,8 +671,13 @@ void MCTSThread::search(){
           contempt = (us == WHITE ?  make_score(dct, dct / 2)
                                   : -make_score(dct, dct / 2));
         }
-        Value opp_minval = -(bestval + 45);
-        Value minval = bestval - 90;
+
+        reporting::Parameters bounds = reporting::get_parameters();
+        int opp_bound = cp_to_stockfish_eval(bounds.stockfish_opponent_tolerance);
+        int mover_bound = cp_to_stockfish_eval(bounds.stockfish_mover_tolerance);
+
+        Value opp_minval = -(bestval + opp_bound);
+        Value minval = bestval - mover_bound;
         Color cur_side_to_move = rootPos.side_to_move();
 
         Position &  calc_pos = rootPos;
