@@ -1,3 +1,22 @@
+'''
+Script to run games between two engines. Handles crashing, bad output smoothly,
+by printing a report of the crash, and then restarting both engines.
+
+Requires 2 command line arguments, the paths to json files describing the engine:
+
+Example json file is:
+
+{
+    "engine_path": "/home/benblack/fun_projs/lc0/build/release/lc0",
+    "options": [
+        "setoption name Hash value 6500",
+        "setoption name Threads value 8"
+    ],
+    "name": "lc0_sf_combined"
+}
+
+'''
+
 import sys
 import time
 import subprocess
@@ -7,6 +26,8 @@ import os
 import multiprocessing
 import json
 
+starttime = 5*60*1000
+inctime = 5*1000
 
 def get_bestmove(file,outfile):
     num_lines_split = 0
@@ -108,15 +129,9 @@ class Engine:
 
     def close(self):
         self.process.terminate()
-        readname = self.read_pipe.name
-        writename = self.write_pipe.name
 
-        self.read_pipe.close()
-        self.write_pipe.close()
         self.stdoutfile.close()
 
-        os.remove(self.read_pipe.name)
-        os.remove(self.write_pipe.name)
 
 
 def board_to_pgn(e1,e2,board,result,write_file,write_idx):
@@ -142,28 +157,14 @@ def board_to_pgn(e1,e2,board,result,write_file,write_idx):
     #return
 
 def create_engines(e1info,e2info,game_idx):
-    read1_fifo = "read1.pipe"
-    read2_fifo = "read2.pipe"
-    write1_fifo = "write1.pipe"
-    write2_fifo = "write2.pipe"
-    all_fifos = [
-        read1_fifo,
-        read2_fifo,
-        write1_fifo,
-        write2_fifo,
-    ]
-    for fifo in all_fifos:
-        if os.path.exists(fifo):
-            os.remove(fifo)
-        os.mkfifo(fifo)
-
-    eng1_proc = subprocess.Popen("exec {} < {} > {}".format(e1info['engine_path'],write1_fifo,read1_fifo),shell=True)
-    eng2_proc = subprocess.Popen("exec {} < {} > {}".format(e2info['engine_path'],write2_fifo,read2_fifo),shell=True)
+    PIPE = subprocess.PIPE
+    eng1_proc = subprocess.Popen("exec {}".format(e1info['engine_path']),stdin=PIPE,stdout=PIPE,shell=True,text=True)
+    eng2_proc = subprocess.Popen("exec {}".format(e2info['engine_path']),stdin=PIPE,stdout=PIPE,shell=True,text=True)
     #eng2_proc = subprocess.Popen([e2name],stdin=open(write2_fifo),stdout=open(read2_fifo,'w'))
-    write1 = open(write1_fifo,'w')
-    write2 = open(write2_fifo,'w')
-    read1 = open(read1_fifo,'r')
-    read2 = open(read2_fifo,'r')
+    write1 = eng1_proc.stdin #open(write1_fifo,'w')
+    write2 = eng2_proc.stdin #open(write2_fifo,'w')
+    read1 = eng1_proc.stdout #open(read1_fifo,'r')
+    read2 = eng2_proc.stdout #open(read2_fifo,'r')
 
     engine1 = Engine(e1info,eng1_proc,read1,write1,game_idx)
     engine2 = Engine(e2info,eng2_proc,read2,write2,game_idx)
@@ -176,21 +177,10 @@ def process_game(eng1,eng2,game_idx):
     cur_eng = eng1
     prev_eng = eng2
 
-    starttime = 45*60*1000
-    inctime = 15*1000
-
     sw = starttime
     sb = starttime
     iw = inctime
     ib = inctime
-    mf = 1
-    if "lc0" in eng1.name:
-        sw *= mf
-        iw *= mf
-    elif "lc0" in eng2.name:
-        sb *= mf
-        ib *= mf
-
 
     board = chess.Board()
     timer = Timer(sw,iw,sb,ib)

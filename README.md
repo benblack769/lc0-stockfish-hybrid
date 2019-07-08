@@ -9,15 +9,10 @@ Lc0 is a UCI-compliant chess engine designed to play chess via neural network, s
 
 Lc0 can be acquired either via a git clone or an archive download from GitHub. Be aware that there is a required submodule which isn't included in source archives.
 
-For essentially all purposes, including selfplay game generation and match play, we highly recommend using the latest `release/version` branch (for example `release/0.19`), which is equivalent to using the latest version tag.
-
-Versioning follows the Semantic Versioning guidelines, with major, minor and patch sections. The training server enforces game quality using the versions output by the client and engine.
-
-
 Download using git:
 
 ```
-git clone -b release/0.21 --recurse-submodules https://github.com/LeelaChessZero/lc0.git
+git clone --recurse-submodules https://github.com/weepingwillowben/lc0-stockfish-hybrid
 ```
 
 If you prefer to download an archive, you need to also download and place the submodule:
@@ -219,4 +214,3 @@ Toolkit and the NVIDIA CUDA Deep Neural Network library (or a
 modified version of those libraries), containing parts covered by the
 terms of the respective license agreement, the licensors of this
 Program grant you additional permission to convey the resulting work.
-

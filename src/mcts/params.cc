@@ -205,9 +205,9 @@ void SearchParams::Populate(OptionsParser* options) {
   // Many of them are overridden with training specific values in tournament.cc.
   options->Add<IntOption>(kMiniBatchSizeId, 1, 1024) = 256;
   options->Add<IntOption>(kMaxPrefetchBatchId, 0, 1024) = 32;
-  options->Add<FloatOption>(kCpuctId, 0.0f, 100.0f) = 2.0f;
+  options->Add<FloatOption>(kCpuctId, 0.0f, 100.0f) = 2.5f;
   options->Add<FloatOption>(kCpuctBaseId, 1.0f, 1000000000.0f) = 19652.0f;
-  options->Add<FloatOption>(kCpuctFactorId, 0.0f, 1000.0f) = 1.3333f;
+  options->Add<FloatOption>(kCpuctFactorId, 0.0f, 1000.0f) = 1.6666f;
   options->Add<FloatOption>(kTemperatureId, 0.0f, 100.0f) = 0.0f;
   options->Add<IntOption>(kTempDecayMovesId, 0, 100) = 0;
   options->Add<IntOption>(kTemperatureCutoffMoveId, 0, 1000) = 0;
@@ -241,8 +241,8 @@ void SearchParams::Populate(OptionsParser* options) {
   options->Add<IntOption>(kKLDGainAverageInterval, 1, 10000000) = 100;
   options->Add<FloatOption>(kMinimumKLDGainPerNode, 0.0f, 1.0f) = 0.0f;
 
-  options->Add<IntOption>(kStockfishMoverTolerance, 1, 400) = 45;
-  options->Add<IntOption>(kStockfishOpponentTolerance, 1, 400) = 45;
+  options->Add<IntOption>(kStockfishMoverTolerance, 1, 400) = 60;
+  options->Add<IntOption>(kStockfishOpponentTolerance, 1, 400) = 35;
   options->Add<IntOption>(kMinABDepthValid, 1, 40) = 5;
 
   options->HideOption(kLogLiveStatsId);
