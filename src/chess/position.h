@@ -29,6 +29,7 @@
 
 #include <string>
 #include "chess/board.h"
+#include "stockfish/reporting_table.h"
 
 namespace lczero {
 
@@ -66,6 +67,11 @@ class Position {
   const ChessBoard& GetThemBoard() const { return them_board_; }
 
   std::string DebugString() const;
+
+    CompareablePosition CompPos()const{
+        ChessBoard board =  GetBoard();
+        return board.CompPos();
+    }
 
  private:
   // The board from the point of view of the player to move.

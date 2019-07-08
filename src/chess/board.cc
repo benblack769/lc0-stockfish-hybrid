@@ -1013,6 +1013,62 @@ void ChessBoard::SetFromFen(const std::string& fen, int* no_capture_ply,
   if (moves) *moves = total_moves;
 }
 
+CompareablePosition ChessBoard::CompPos(){
+    CompareablePosition p;
+    memset(&p,0,sizeof(p));
+    p.active_color = flipped_;
+    bool old_flipped = flipped_;
+    if(old_flipped){
+        Mirror();
+    }
+
+    p.byColorBB[WHITE] = ours().as_int();
+    p.byColorBB[BLACK] = theirs().as_int();
+    p.byTypeBB[ROOK] = rooks().as_int();
+    p.byTypeBB[BISHOP] = bishops().as_int();
+    p.byTypeBB[PAWN] = pawns().as_int();
+    p.byTypeBB[KNIGHT] = knights().as_int();
+    p.byTypeBB[QUEEN] = queens().as_int();
+
+    p.byTypeBB[KING] = our_king().as_int() | their_king().as_int();
+
+    p.castlingRights = 0;
+    if(castlings_.we_can_00()){
+        p.castlingRights |= WHITE_OO;
+    }
+    if(castlings_.we_can_000()){
+        p.castlingRights |= WHITE_OOO;
+    }
+    if(castlings_.they_can_00()){
+        p.castlingRights |= BLACK_OO;
+    }
+    if(castlings_.they_can_000()){
+        p.castlingRights |= BLACK_OOO;
+    }
+    p.enpassant = SQ_NONE;
+    int set_count = 0;
+    for(int f = 0; f < 8; f++){
+        if(pawns_.get(0,f)){
+            set_count++;
+            int row = 2;
+            p.enpassant = static_cast<Square>(row * 8 + f);
+        }
+        if(pawns_.get(7,f)){
+            set_count++;
+            int row = 5;
+            p.enpassant = static_cast<Square>(row * 8 + f);
+        }
+    }
+    if(set_count > 1){
+        throw Exception("Bad enpassant: " + std::to_string(en_passant().as_int()));
+    }
+    //std::cout << "ep: "<<  p.enpassant << "  \t" << en_passant().as_int() << "\n";
+    if(old_flipped){
+        Mirror();
+    }
+    return p;
+}
+
 bool ChessBoard::HasMatingMaterial() const {
   if (!rooks_.empty() || !pawns_.empty()) {
     return true;

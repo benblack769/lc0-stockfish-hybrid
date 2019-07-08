@@ -30,6 +30,7 @@
 #include <string>
 #include "chess/bitboard.h"
 #include "utils/hashcat.h"
+#include "stockfish/reporting_table.h"
 
 namespace lczero {
 
@@ -69,6 +70,7 @@ class ChessBoard {
   // the game.
   void SetFromFen(const std::string& fen, int* no_capture_ply = nullptr,
                   int* moves = nullptr);
+  CompareablePosition CompPos();
   // Nullifies the whole structure.
   void Clear();
   // Swaps black and white pieces and mirrors them relative to the
@@ -159,6 +161,9 @@ class ChessBoard {
   }
   BitBoard their_knights() const {
     return their_pieces_ - pawns() - their_king_ - rooks_ - bishops_;
+  }
+  BitBoard knights() const {
+    return our_knights() | their_knights();
   }
   BitBoard our_king() const { return 1ull << our_king_.as_int(); }
   BitBoard their_king() const { return 1ull << their_king_.as_int(); }
