@@ -566,7 +566,7 @@ lczero::optional<CompareableMove> get_bestmove_from_tt(Position & pos){
    }
    return lczero::optional<CompareableMove>();
 }
-void calc_single_node(Position & pos, const CompareablePosition & comp_pos, const Stack * stack_initted, Value minval, Value maxval, int calc_depth){
+void calc_single_node(Position & pos, const CompareablePosition & comp_pos, const Stack * stack_initted, Value bestval, int calc_depth){
     constexpr int stack_size = MAX_PLY+7;
     Stack stack[stack_size];
     Stack * ss = stack + 4; // To reference from (ss-4) to (ss+2)
@@ -592,23 +592,29 @@ void calc_single_node(Position & pos, const CompareablePosition & comp_pos, cons
         pos.do_move(move,st);
 
         std::memcpy(stack, stack_initted, stack_size * sizeof(Stack));
-        Value reduced_beta_value;
+        int actual_value = -1;
         int64_t microseconds_spent = reporting::time_microseconds([&](){
 
-        reduced_beta_value = -search<PV>(pos, EvalTT, ss, -(minval), -maxval, new_depth_v, false);
-        /*if(reduced_beta_value <= minval){
-            new_depth_v = static_cast<Depth>(new_depth+1);
-            reduced_beta_value = -search<NonPV>(pos, TT, ss, -(minval+1), -minval, new_depth_v, false);
-        }*/
+        int inc_val = 25;
+        int start_val = 60;
+        int end_val = -120;
+        Value reduced_beta_value;
+        for(int add_val = start_val; add_val >= end_val; add_val -= inc_val){
+            Value testval = bestval + add_val;
+            reduced_beta_value = -search<NonPV>(pos, EvalTT, ss,-(testval+1), -testval, new_depth_v, false);
+            if(reduced_beta_value > testval){
+                actual_value = add_val;
+                return;
+            }
+        }
 
         });
         total_microseconds_spent += microseconds_spent;
         //reduced_beta_value = std::min(maxval,reduced_beta_value);
-        if(reduced_beta_value != 0)std::cout << reduced_beta_value << "\n";
-        if(reduced_beta_value > maxval){
+        if(actual_value != -1){
             auto move_opt = get_bestmove_from_tt(pos);
             CompareableMove comp_move(UCI::move(move,pos.is_chess960()));
-            all_ok_moves.push_back(MoveVal{reduced_beta_value,comp_move});
+            all_ok_moves.push_back(MoveVal{actual_value,comp_move});
         }
         pos.undo_move(move);
     }
@@ -655,7 +661,7 @@ void MCTSThread::search(){
 
         reporting::Parameters bounds = reporting::get_parameters();
         int opp_bound = cp_to_stockfish_eval(bounds.stockfish_opponent_tolerance);
-        int mover_bound = 50;//cp_to_stockfish_eval(bounds.stockfish_mover_tolerance);
+        int mover_bound = 10;//cp_to_stockfish_eval(bounds.stockfish_mover_tolerance);
 
         Color root_side_to_move = rootPos.side_to_move();
 
@@ -680,8 +686,8 @@ void MCTSThread::search(){
         Value my_bestval = calc_pos.side_to_move() == root_side_to_move ? bestval : -bestval;
         //Value bound_size = VALUE_DRAW + mover_bound + opp_bound;
 
-        Value use_max_val = my_bestval + mover_bound;
-        Value use_min_val = my_bestval - mover_bound;
+        Value use_max_val = my_bestval - mover_bound;
+        Value use_min_val = my_bestval + mover_bound;
 
         bool is_my_move = idx % 2 == 0;// calc_pos.side_to_move() == cur_side_to_move;
         bool is_root = moves_to_pos.size() == 0;
@@ -689,7 +695,7 @@ void MCTSThread::search(){
         //    std::cout << "rootcount: " <<   int(calc_pos.side_to_move() == cur_side_to_move) << std::endl;
         //    std::exit(1);
         //}
-        calc_single_node(calc_pos,calc_pos_data.pos,stack,use_min_val,use_max_val,calc_pos_data.search_depth);
+        calc_single_node(calc_pos,calc_pos_data.pos,stack,my_bestval,calc_pos_data.search_depth);
 
         //std::cout << "calced node\n";
 
