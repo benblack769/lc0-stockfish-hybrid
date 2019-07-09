@@ -972,7 +972,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
 
       //if ab searching does not report this move as promising, don't search it
       CompareableMove comp_move(child.GetMove(flipped).as_string());
-      float ab_score = -8000.0f;
+      float ab_score = 0;
       if(movelist
               && movelist.value().moves.size()
               && movelist.value().search_depth >= sf_min_depth){
@@ -986,7 +986,9 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
              }
              return false;
          };
-         mvl_get(movelist.value().moves,comp_move,ab_score);
+         if(!mvl_get(movelist.value().moves,comp_move,ab_score)){
+             continue;
+         }
      }
      const float ab_add_val = 0.3*ab_score / 295.0f;
       const float Q = child.GetQ(fpu);
