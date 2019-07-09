@@ -288,7 +288,7 @@ void print_pair_nostr(std::ostream & outfile,std::string str1,std::string str2){
     print_str(outfile,str1);
     outfile << ':' << str2;
 }
-void print_node(std::ostream & outfile,int id,int node_count,int ab_depth,int ab_time,bool black_move){
+void print_node(std::ostream & outfile,int id,int node_count,float q_val,int ab_depth,int ab_time,bool black_move){
     outfile << "{";
     print_pair(outfile,"type","node");
     outfile << ",";
@@ -301,6 +301,8 @@ void print_node(std::ostream & outfile,int id,int node_count,int ab_depth,int ab
     print_pair_nostr(outfile,"ab_time",std::to_string(ab_time));
     outfile << ",";
     print_pair_nostr(outfile,"node_count",std::to_string(node_count));
+    outfile << ",";
+    print_pair_nostr(outfile,"q_val",std::to_string(q_val));
     outfile << "},";
 }
 void print_edge(std::ostream & outfile,bool is_allowed,std::string name,int parent,int child){
@@ -320,7 +322,7 @@ void recursive_graph_print(std::ostream & outfile,PositionHistory & history,Node
     int my_idx = id_counter;
     id_counter++;
     if(!node){
-        print_node(outfile,my_idx,0,0,0,flipped);
+        print_node(outfile,my_idx,0,0,0,0,flipped);
         return;
     }
     auto ab_options = reporting::get_ab_entry(history.Last().CompPos());
@@ -330,7 +332,7 @@ void recursive_graph_print(std::ostream & outfile,PositionHistory & history,Node
     if(node->GetN() != mcts_nodes && node->GetN() > 5){
     //    std::cout << node->GetN() << "\t" << mcts_nodes  << "\t" << ab_depth << '\n';
     }
-    print_node(outfile,my_idx,node->GetN(),ab_depth,ab_time,flipped);
+    print_node(outfile,my_idx,node->GetN(),node->GetQ(),ab_depth,ab_time,flipped);
     for(EdgeAndNode child : node->Edges()){
         int child_idx = id_counter;
         std::string move_name = child.GetMove(flipped).as_string();
@@ -1387,6 +1389,7 @@ void SearchWorker::DoBackupUpdateSingleNode(
     return;
   }
 
+
   // For the first visit to a terminal, maybe convert ancestors to terminal too.
   auto can_convert =
       params_.GetStickyEndgames() && node->IsTerminal() && !node->GetN();
@@ -1438,14 +1441,13 @@ void SearchWorker::DoBackupUpdateSingleNode(
   search_->cum_depth_ += node_to_process.depth * node_to_process.multivisit;
   search_->max_depth_ = std::max(search_->max_depth_, node_to_process.depth);
 
+  std::vector<Node *> ordered_node_stack;
 
-    std::vector<Node *> ordered_node_stack;
-
-    for (Node* n = node_to_process.node; n != search_->root_node_->GetParent();
+      for (Node* n = node_to_process.node; n != search_->root_node_->GetParent();
      n = n->GetParent()) {
          ordered_node_stack.push_back(n);
-    }
-    std::reverse(ordered_node_stack.begin(),ordered_node_stack.end());
+}
+std::reverse(ordered_node_stack.begin(),ordered_node_stack.end());
   history_.Trim(search_->played_history_.GetLength());
   CompareableMoveList movelist;
   for (size_t orig_idx = 0; orig_idx < ordered_node_stack.size(); orig_idx++) {
@@ -1460,6 +1462,7 @@ void SearchWorker::DoBackupUpdateSingleNode(
        reporting::set_mcts_entry(comp_pos,movelist,1);//cur_node->GetN());
    }
    history_.Trim(search_->played_history_.GetLength());
+
 }  // namespace lczero
 
 // 7. Update the Search's status and progress information.

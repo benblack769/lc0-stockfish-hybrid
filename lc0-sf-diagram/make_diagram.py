@@ -31,7 +31,7 @@ for item in graph_data:
         shape = "oval"#"box" if item['type'] == "black" else "oval"
         id = item['node']
         color = "red" if item['turn'] == "black" else "blue"
-        label = str(item['ab_depth']) #+ "--" + "{:,}".format(item['ab_time'])#""#item['node_count']
+        label = str(item['q_val']) #+ "--" + "{:,}".format(item['ab_time'])#""#item['node_count']
         if id in remove_nodes:
             continue
 
