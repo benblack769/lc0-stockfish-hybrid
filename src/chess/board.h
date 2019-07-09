@@ -33,6 +33,7 @@
 #include "stockfish/reporting_table.h"
 
 namespace lczero {
+class SearchParams;
 
 // Initializes internal magic bitboard structures.
 void InitializeMagicBitboards();
@@ -97,6 +98,8 @@ class ChessBoard {
   MoveList GenerateLegalMoves() const;
   // Check whether pseudolegal move is legal.
   bool IsLegalMove(Move move, const KingAttackInfo& king_attack_info) const;
+
+  float TradePenalty(const SearchParams & params)const;
 
   uint64_t Hash() const {
     return HashCat({our_pieces_.as_int(), their_pieces_.as_int(),

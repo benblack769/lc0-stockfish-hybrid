@@ -98,6 +98,9 @@ class SearchParams {
   float GetMinimumKLDGainPerNode() const {
     return options_.Get<float>(kMinimumKLDGainPerNode.GetId());
   }
+  float GetTradePenalty() const {
+      return kTradePenalty;
+  }
 
   // Search parameter IDs.
   static const OptionId kMiniBatchSizeId;
@@ -134,6 +137,7 @@ class SearchParams {
   static const OptionId kStockfishMoverTolerance;
   static const OptionId kMinABDepthValid;
   static const OptionId kStockfishOpponentTolerance;
+  static const OptionId kTradePenaltyId;
 
  private:
   const OptionsDict& options_;
@@ -161,6 +165,7 @@ class SearchParams {
   const bool kSyzygyFastPlay;
   const FillEmptyHistory kHistoryFill;
   const int kMiniBatchSize;
+  const float kTradePenalty;
 };
 
 }  // namespace lczero

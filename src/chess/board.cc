@@ -33,6 +33,7 @@
 #include <cstring>
 #include <sstream>
 #include "utils/exception.h"
+#include "mcts/params.h"
 
 #if not defined(NO_PEXT)
 // Include header for pext instruction.
@@ -580,6 +581,16 @@ MoveList ChessBoard::GeneratePseudolegalMoves() const {
   return result;
 }
 
+float ChessBoard::TradePenalty(const SearchParams & params)const{
+    float peice_val = (our_pieces_ & bishops()).count() * 3 +
+    (our_pieces_ & rooks()).count() * 5 +
+    (our_pieces_ & knights()).count() * 3 +
+    (our_pieces_ & queens()).count() * 9;
+    float eg_material = 10;
+    float true_adv = std::max(peice_val-eg_material,0.0f);
+    float material_advantage = true_adv * params.GetTradePenalty();
+    return material_advantage;
+}
 bool ChessBoard::ApplyMove(Move move) {
   const auto& from = move.from();
   const auto& to = move.to();

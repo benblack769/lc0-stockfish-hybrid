@@ -199,6 +199,10 @@ const OptionId SearchParams::kMinABDepthValid{
     "min-ab-depth-valid", "MinABDepthValid",
     "How deep stockfish eval needs to get before the MCTS algorithm starts  "
     "eliminating the move Stockfish recomends to remove."};
+const OptionId SearchParams::kTradePenaltyId{
+    "trade-penalty", "TradePenalty",
+    "How much a pawn worth of material counts as an advantage to the mover "};
+
 
 void SearchParams::Populate(OptionsParser* options) {
   // Here the uci optimized defaults" are set.
@@ -244,6 +248,7 @@ void SearchParams::Populate(OptionsParser* options) {
   options->Add<IntOption>(kStockfishMoverTolerance, 1, 400) = 60;
   options->Add<IntOption>(kStockfishOpponentTolerance, 1, 400) = 35;
   options->Add<IntOption>(kMinABDepthValid, 1, 40) = 5;
+  options->Add<FloatOption>(kTradePenaltyId, 0.0f, 10.0f) = 0.00f;
 
   options->HideOption(kLogLiveStatsId);
 }
@@ -275,8 +280,9 @@ SearchParams::SearchParams(const OptionsDict& options)
       kSyzygyFastPlay(options.Get<bool>(kSyzygyFastPlayId.GetId())),
       kHistoryFill(
           EncodeHistoryFill(options.Get<std::string>(kHistoryFillId.GetId()))),
-      kMiniBatchSize(options.Get<int>(kMiniBatchSizeId.GetId())) {
-          //set parameters that are accessed via reporting interface
+      kMiniBatchSize(options.Get<int>(kMiniBatchSizeId.GetId())),
+      kTradePenalty(options.Get<float>(kTradePenaltyId.GetId())){
+                //set parameters that are accessed via reporting interface
             reporting::Parameters params = {
                 options.Get<int>(kStockfishMoverTolerance.GetId()),
                 options.Get<int>(kStockfishOpponentTolerance.GetId()),
