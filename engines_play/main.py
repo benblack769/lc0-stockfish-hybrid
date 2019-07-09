@@ -187,7 +187,11 @@ def process_game(eng1,eng2,game_idx):
     moves = []
     white_turn = True
 
-    while not board.is_game_over(claim_draw=True):
+    while not (board.is_repetition()
+            or board.is_checkmate()
+            or board.is_stalemate()
+            or board.is_insufficient_material()
+            or board.can_claim_fifty_moves()):
         while True:
             try:
                 start = time.time()
