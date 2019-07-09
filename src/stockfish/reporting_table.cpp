@@ -41,7 +41,7 @@ static constexpr int MIN_SEARCH_NODES = 3;
 constexpr size_t INVALID_LOC = 0xff0000000000;
 
 struct TableEntry{
-    CompareableMoveList moves;
+    ComparableMoveValList moves;
     CompareableMoveList moves_to_pos;
     CompareableMove bestmove;
     int bestmove_depth=-1;
@@ -79,12 +79,7 @@ public:
         }
         else{
             TableEntry & entry = iter->second;
-            CompareableMoveList return_moves = entry.moves;
-            if(entry.bestmove.is_set() &&
-                   !contains(return_moves,entry.bestmove)){
-                      return_moves.push_back(entry.bestmove);
-            }
-            return lczero::optional<ABTableEntry>(ABTableEntry{return_moves,iter->second.calced_search_depth});
+            return lczero::optional<ABTableEntry>(ABTableEntry{entry.moves,iter->second.calced_search_depth});
         }
     }
     //saves some search info, but clears it for next move
@@ -92,7 +87,7 @@ public:
         heap.clear();
         item_location.clear();
     }*/
-    void finished_ab_calc(CompareablePosition pos, CompareableMoveList moves, int search_depth, int64_t ab_time_spent){
+    void finished_ab_calc(CompareablePosition pos, ComparableMoveValList moves, int search_depth, int64_t ab_time_spent){
         heap_iter h_iter = item_location.find(pos);
         if(h_iter == item_location.end()){
             throw runtime_error("got position without location");
@@ -168,28 +163,10 @@ public:
         SmallHistogram hist;
         for(const auto & pos_entry : item_location){
             size_t entry = pos_entry.second.moves.size();
-            if(pos_entry.second.bestmove.is_set() &&
-                !contains(pos_entry.second.moves,pos_entry.second.bestmove)){
-                entry++;
-            }
             size_t add = pos_entry.second.nodes_searched;
             hist.depth_reduction_histogram[entry] += add;
         }
         return hist;
-    }
-    void set_bestmove_if_exists(CompareablePosition pos, CompareableMove bestmove, int search_depth){
-        heap_iter h_iter = item_location.find(pos);
-        if(h_iter == item_location.end()){
-            return;
-        }
-        //if(pos.ep_diff(h_iter->first)){
-        //    return;//don't change value of node if en passant differnet
-        //}
-        TableEntry & entry = h_iter->second;
-        if(entry.bestmove_depth < search_depth){
-            entry.bestmove_depth = search_depth;
-            entry.bestmove = bestmove;
-        }
     }
 private:
     bool rearrange_up(size_t loc){
@@ -358,7 +335,7 @@ TimeHeapReturn pop_calc_position(){
     global_lock.unlock();
     return res;
 }
-void set_ab_entry(CompareablePosition position, CompareableMoveList moves, int search_depth, int64_t microseconds_spent){
+void set_ab_entry(CompareablePosition position, ComparableMoveValList moves, int search_depth, int64_t microseconds_spent){
     global_lock.lock();
 
     ratio_heap.finished_ab_calc(position,moves,search_depth,microseconds_spent);
@@ -376,13 +353,6 @@ void set_mcts_entry(CompareablePosition position, CompareableMoveList moves_to_p
     global_lock.lock();
 
     ratio_heap.update_mcts(position,moves_to_pos,nodes_searched);
-
-    global_lock.unlock();
-}
-void set_bestmove_if_exists(CompareablePosition position, CompareableMove bestmove, int bestmove_depth){
-    global_lock.lock();
-
-    ratio_heap.set_bestmove_if_exists(position,bestmove,bestmove_depth);
 
     global_lock.unlock();
 }

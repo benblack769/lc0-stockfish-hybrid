@@ -241,8 +241,8 @@ void SearchParams::Populate(OptionsParser* options) {
   options->Add<IntOption>(kKLDGainAverageInterval, 1, 10000000) = 100;
   options->Add<FloatOption>(kMinimumKLDGainPerNode, 0.0f, 1.0f) = 0.0f;
 
-  options->Add<IntOption>(kStockfishMoverTolerance, 1, 400) = 60;
-  options->Add<IntOption>(kStockfishOpponentTolerance, 1, 400) = 35;
+  options->Add<IntOption>(kStockfishMoverTolerance, 1, 400) = 200;
+  options->Add<IntOption>(kStockfishOpponentTolerance, 1, 400) = 200;
   options->Add<IntOption>(kMinABDepthValid, 1, 40) = 5;
 
   options->HideOption(kLogLiveStatsId);

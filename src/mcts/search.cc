@@ -972,15 +972,26 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
 
       //if ab searching does not report this move as promising, don't search it
       CompareableMove comp_move(child.GetMove(flipped).as_string());
+      float ab_score = -400.0f;
       if(movelist
               && movelist.value().moves.size()
-              && movelist.value().search_depth >= sf_min_depth
-              && !contains(movelist.value().moves,comp_move)){
-         continue;
-     }
+              && movelist.value().search_depth >= sf_min_depth){
 
+         auto mvl_get = [](const ComparableMoveValList & mvl, CompareableMove move,float & val){
+             for(MoveVal mv : mvl){
+                 if(move == mv.move){
+                     val = mv.val;
+                     return true;
+                 }
+             }
+             return false;
+         };
+         mvl_get(movelist.value().moves,comp_move,ab_score);
+     }
+     const float ab_add_val = ab_score / 295.0f;
       const float Q = child.GetQ(fpu);
-      const float score = child.GetU(puct_mult) + Q;
+      //std::cout << ab_add_val <<"\t" <<  Q << "\n";
+      const float score = child.GetU(puct_mult) + Q + ab_add_val;
       if (score > best) {
         second_best = best;
         second_best_edge = best_edge;

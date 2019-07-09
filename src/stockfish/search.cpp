@@ -158,7 +158,6 @@ namespace {
 
 } // namespace
 
-void set_pv_bestmoves(Position & pos,std::vector<Move>,int depth);
 
 /// Search::init() is called at startup to initialize various lookup tables
 
@@ -477,7 +476,6 @@ void Thread::search() {
           std::stable_sort(rootMoves.begin() + pvFirst, rootMoves.begin() + pvIdx + 1);
 
           if(rootMoves.size() && rootMoves[0].pv.size()){
-              set_pv_bestmoves(rootPos,rootMoves[0].pv,rootDepth);
               if(bestValue >= VALUE_MATE_IN_MAX_PLY){
                   reporting::set_found_mate();
               }
@@ -553,21 +551,6 @@ void Thread::search() {
       std::swap(rootMoves[0], *std::find(rootMoves.begin(), rootMoves.end(),
                 skill.best ? skill.best : skill.pick_best(multiPV)));
 }
-void set_pv_bestmoves(Position & pos,std::vector<Move> moves,int depth){
-    if(moves.size() == 0){
-        return;
-    }
-    //this
-    Move bestmove = moves[0];
-    CompareableMove bestcmmove(UCI::move(bestmove,pos.is_chess960()));
-    reporting::set_bestmove_if_exists(pos.comp_pos(),bestcmmove,depth);
-
-    moves.erase(moves.begin());
-    StateInfo st;
-    pos.do_move(bestmove,st);
-    set_pv_bestmoves(pos,moves,depth-1);
-    pos.undo_move(bestmove);
-}
 lczero::optional<CompareableMove> get_bestmove_from_tt(Position & pos){
     bool ttHit = false;
     TTEntry* tte = EvalTT.probe(pos.key(), ttHit);
@@ -592,7 +575,7 @@ void calc_single_node(Position & pos, const CompareablePosition & comp_pos, cons
     //    std::exit(1);
     //}
 
-    CompareableMoveList all_ok_moves;
+    ComparableMoveValList all_ok_moves;
 
     int new_depth = calc_depth;
     Depth new_depth_v = static_cast<Depth>(new_depth);
@@ -612,7 +595,7 @@ void calc_single_node(Position & pos, const CompareablePosition & comp_pos, cons
         Value reduced_beta_value;
         int64_t microseconds_spent = reporting::time_microseconds([&](){
 
-        reduced_beta_value = -search<NonPV>(pos, EvalTT, ss, -(minval+1), -minval, new_depth_v, false);
+        reduced_beta_value = -search<PV>(pos, EvalTT, ss, -(minval), -maxval, new_depth_v, false);
         /*if(reduced_beta_value <= minval){
             new_depth_v = static_cast<Depth>(new_depth+1);
             reduced_beta_value = -search<NonPV>(pos, TT, ss, -(minval+1), -minval, new_depth_v, false);
@@ -620,14 +603,12 @@ void calc_single_node(Position & pos, const CompareablePosition & comp_pos, cons
 
         });
         total_microseconds_spent += microseconds_spent;
-        if(reduced_beta_value > minval){
+        //reduced_beta_value = std::min(maxval,reduced_beta_value);
+        if(reduced_beta_value != 0)std::cout << reduced_beta_value << "\n";
+        if(reduced_beta_value > maxval){
             auto move_opt = get_bestmove_from_tt(pos);
             CompareableMove comp_move(UCI::move(move,pos.is_chess960()));
-            all_ok_moves.push_back(comp_move);
-            if(move_opt){
-                // a lot  of child moves are missing, so don't worry about them
-                reporting::set_bestmove_if_exists(pos.comp_pos(),move_opt.value(),new_depth_v);
-            }
+            all_ok_moves.push_back(MoveVal{reduced_beta_value,comp_move});
         }
         pos.undo_move(move);
     }
@@ -674,11 +655,9 @@ void MCTSThread::search(){
 
         reporting::Parameters bounds = reporting::get_parameters();
         int opp_bound = cp_to_stockfish_eval(bounds.stockfish_opponent_tolerance);
-        int mover_bound = cp_to_stockfish_eval(bounds.stockfish_mover_tolerance);
+        int mover_bound = 50;//cp_to_stockfish_eval(bounds.stockfish_mover_tolerance);
 
-        Value opp_minval = -(bestval + opp_bound);
-        Value minval = bestval - mover_bound;
-        Color cur_side_to_move = rootPos.side_to_move();
+        Color root_side_to_move = rootPos.side_to_move();
 
         Position &  calc_pos = rootPos;
         std::vector<StateInfo> states(moves_to_pos.size());
@@ -698,8 +677,12 @@ void MCTSThread::search(){
             throw std::runtime_error("did not arrive at correct position through movelist");
         }
 
-        Value use_min_val = calc_pos.side_to_move() == cur_side_to_move ? minval : opp_minval;
-        Value use_max_val = calc_pos.side_to_move() == cur_side_to_move ? opp_minval : minval;
+        Value my_bestval = calc_pos.side_to_move() == root_side_to_move ? bestval : -bestval;
+        //Value bound_size = VALUE_DRAW + mover_bound + opp_bound;
+
+        Value use_max_val = my_bestval + mover_bound;
+        Value use_min_val = my_bestval - mover_bound;
+
         bool is_my_move = idx % 2 == 0;// calc_pos.side_to_move() == cur_side_to_move;
         bool is_root = moves_to_pos.size() == 0;
         //if(calc_pos.comp_pos() == rootPos.comp_pos()){

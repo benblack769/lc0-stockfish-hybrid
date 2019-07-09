@@ -44,8 +44,13 @@ namespace std {
     }
   };
 }
+struct MoveVal{
+    int val=0;
+    CompareableMove move;
+};
+using ComparableMoveValList = std::vector<MoveVal>;
 struct ABTableEntry{
-    CompareableMoveList moves;
+    ComparableMoveValList moves;
     int search_depth;
 };
 struct GlobalCollectionInfo{
@@ -79,9 +84,8 @@ struct Parameters{
 };
 void clear();
 //bool should_set_entry(Key key, int depth,int search_depth,Value val);
-void set_ab_entry(CompareablePosition position,CompareableMoveList moves,int search_depth, int64_t microseconds_spent);
+void set_ab_entry(CompareablePosition position,ComparableMoveValList moves,int search_depth, int64_t microseconds_spent);
 void set_mcts_entry(CompareablePosition position, CompareableMoveList moves_to_pos, int nodes_searched);
-void set_bestmove_if_exists(CompareablePosition position, CompareableMove bestmove, int bestmove_depth);
 TimeHeapReturn pop_calc_position();
 lczero::optional<ABTableEntry> get_ab_entry(CompareablePosition position);
 void debug();
