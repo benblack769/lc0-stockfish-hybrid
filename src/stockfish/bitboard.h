@@ -278,7 +278,7 @@ inline Bitboard attacks_bb(PieceType pt, Square s, Bitboard occupied) {
 /// popcount() counts the number of non-zero bits in a bitboard
 
 inline int popcount(Bitboard b) {
-
+#define USE_POPCNT
 #ifndef USE_POPCNT
 
   extern uint8_t PopCnt16[1 << 16];
