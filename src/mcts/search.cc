@@ -949,7 +949,6 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
     lczero::optional<ABTableEntry> movelist = reporting::get_ab_entry(comp_pos);
     bool flipped = history_.Last().IsBlackToMove();
     reporting::set_path_chosen(bool(movelist) && movelist.value().search_depth >= 5);
-
     for (auto child : node->Edges()) {
       if (is_root_node) {
         // If there's no chance to catch up to the current best node with
@@ -1308,6 +1307,32 @@ void SearchWorker::DoBackupUpdateSingleNode(
     return;
   }
 
+    reporting::Parameters bounds = reporting::get_parameters();
+    int sf_min_depth = bounds.min_ab_depth_valid;
+      std::vector<Node *> ordered_node_stack;
+
+      for (Node* n = node_to_process.node; n != search_->root_node_->GetParent();
+       n = n->GetParent()) {
+           ordered_node_stack.push_back(n);
+      }
+      std::reverse(ordered_node_stack.begin(),ordered_node_stack.end());
+    history_.Trim(search_->played_history_.GetLength());
+    std::vector<CompareablePosition> postition_stack;
+    CompareableMoveList movelist;
+    for (size_t orig_idx = 0; orig_idx < ordered_node_stack.size(); orig_idx++) {
+         Node * cur_node = ordered_node_stack[orig_idx];
+         if(cur_node != search_->root_node_){
+             Edge * e = cur_node->GetOwnEdge();
+             std::string movestr = e->GetMove(history_.IsBlackToMove()).as_string();
+             movelist.push_back(CompareableMove(movestr));
+             history_.Append(e->GetMove());
+         }
+         CompareablePosition comp_pos = history_.Last().CompPos();
+         postition_stack.push_back(comp_pos);
+
+         reporting::set_mcts_entry(comp_pos,movelist,node_to_process.multivisit);
+     }
+     history_.Trim(search_->played_history_.GetLength());
   // For the first visit to a terminal, maybe convert ancestors to terminal too.
   auto can_convert =
       params_.GetStickyEndgames() && node->IsTerminal() && !node->GetN();
@@ -1315,8 +1340,14 @@ void SearchWorker::DoBackupUpdateSingleNode(
   // Backup V value up to a root. After 1 visit, V = Q.
   float v = node_to_process.v;
   float d = node_to_process.d;
+
+  node->setEval(v);
+
+  int idx = postition_stack.size();
   for (Node *n = node, *p; n != search_->root_node_->GetParent(); n = p) {
     p = n->GetParent();
+    idx -= 1;
+    CompareablePosition & comp_pos = postition_stack[idx];
 
     // Current node might have become terminal from some other descendant, so
     // backup the rest of the way with more accurate values.
@@ -1357,34 +1388,39 @@ void SearchWorker::DoBackupUpdateSingleNode(
       search_->current_best_edge_ =
           search_->GetBestChildNoTemperature(search_->root_node_);
     }
+
+    bool is_root_node = n == search_->root_node_;
+    const float fpu = GetFpu(params_, n, is_root_node);
+
+
+    lczero::optional<ABTableEntry> movelist = reporting::get_ab_entry(comp_pos);
+    bool flipped = history_.Last().IsBlackToMove();
+
+    if(movelist
+            && movelist.value().moves.size()
+            && movelist.value().search_depth >= sf_min_depth){
+        float valid_weighted_q = n->getEval();
+        int valid_n = 1;
+        //float tot_weighted_q = 0;
+        for (auto child : n->Edges()) {
+            const float Q = child.GetQ(fpu);
+            const int N = child.GetN();
+            CompareableMove comp_move(child.GetMove(flipped).as_string());
+
+           //tot_weighted_q += Q * N;
+           if(contains(movelist.value().moves,comp_move)){
+               valid_weighted_q += Q * N;
+               valid_n += N;
+           }
+        }
+        float new_q = valid_weighted_q / valid_n;
+        n->setQ(new_q);
+        n->setN(valid_n);
+    }
   }
   search_->total_playouts_ += node_to_process.multivisit;
   search_->cum_depth_ += node_to_process.depth * node_to_process.multivisit;
   search_->max_depth_ = std::max(search_->max_depth_, node_to_process.depth);
-
-
-    std::vector<Node *> ordered_node_stack;
-
-    for (Node* n = node_to_process.node; n != search_->root_node_->GetParent();
-     n = n->GetParent()) {
-         ordered_node_stack.push_back(n);
-    }
-    std::reverse(ordered_node_stack.begin(),ordered_node_stack.end());
-  history_.Trim(search_->played_history_.GetLength());
-  CompareableMoveList movelist;
-  for (size_t orig_idx = 0; orig_idx < ordered_node_stack.size(); orig_idx++) {
-       Node * cur_node = ordered_node_stack[orig_idx];
-       if(cur_node != search_->root_node_){
-           Edge * e = cur_node->GetOwnEdge();
-           std::string movestr = e->GetMove(history_.IsBlackToMove()).as_string();
-           movelist.push_back(CompareableMove(movestr));
-           history_.Append(e->GetMove());
-       }
-       CompareablePosition comp_pos = history_.Last().CompPos();
-
-       reporting::set_mcts_entry(comp_pos,movelist,1);
-   }
-   history_.Trim(search_->played_history_.GetLength());
 }  // namespace lczero
 
 // 7. Update the Search's status and progress information.
