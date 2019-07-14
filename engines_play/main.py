@@ -26,13 +26,13 @@ import os
 import multiprocessing
 import json
 
-starttime = 5*60*1000
-inctime = 5*1000
+starttime = 15*60*1000
+inctime = 10*1000
 
 def get_bestmove(file,outfile):
     num_lines_split = 0
     while True:
-        line = file.readline()
+        line = file.readline().decode()
         #print(line)
         outfile.write(line)
         if not line:
@@ -110,7 +110,7 @@ class Engine:
         self.read_pipe = read_pipe
         self.write_pipe = write_pipe
         for option in engine_info['options']:
-            self.write_pipe.write(option+"\n")
+            self.write_pipe.write((option+"\n").encode())
         stdoutfname = "games/"+str(game_idx)+self.name + ".txt"
         self.stdoutfile = open(stdoutfname,'a')
 
@@ -120,8 +120,8 @@ class Engine:
         timer_str = timer.go_cmd()
         print(position_str)
         print(timer_str)
-        self.write_pipe.write(position_str)
-        self.write_pipe.write(timer_str)
+        self.write_pipe.write(position_str.encode())
+        self.write_pipe.write(timer_str.encode())
         self.write_pipe.flush()
 
         bestmove = get_bestmove(self.read_pipe,self.stdoutfile)
@@ -158,8 +158,8 @@ def board_to_pgn(e1,e2,board,result,write_file,write_idx):
 
 def create_engines(e1info,e2info,game_idx):
     PIPE = subprocess.PIPE
-    eng1_proc = subprocess.Popen("exec {}".format(e1info['engine_path']),stdin=PIPE,stdout=PIPE,shell=True,text=True)
-    eng2_proc = subprocess.Popen("exec {}".format(e2info['engine_path']),stdin=PIPE,stdout=PIPE,shell=True,text=True)
+    eng1_proc = subprocess.Popen("exec {}".format(e1info['engine_path']),stdin=PIPE,stdout=PIPE,shell=True)
+    eng2_proc = subprocess.Popen("exec {}".format(e2info['engine_path']),stdin=PIPE,stdout=PIPE,shell=True)
     #eng2_proc = subprocess.Popen([e2name],stdin=open(write2_fifo),stdout=open(read2_fifo,'w'))
     write1 = eng1_proc.stdin #open(write1_fifo,'w')
     write2 = eng2_proc.stdin #open(write2_fifo,'w')
