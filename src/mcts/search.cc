@@ -944,12 +944,23 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
     int possible_moves = 0;
     const float fpu = GetFpu(params_, node, is_root_node);
 
+    std::vector<char> should_moves;
+    bool any_set = false;
+    for (auto child : node->Edges()) {
+        history_.Append(child.GetMove());
+        CompareablePosition comp_pos = history_.Last().CompPos();
+        history_.Pop();
+        lczero::optional<ABTableEntry> should_move = reporting::get_ab_entry(comp_pos);
+        reporting::set_path_chosen(bool(should_move) && should_move.value().search_depth >= sf_min_depth);
 
-    CompareablePosition comp_pos = history_.Last().CompPos();
-    lczero::optional<ABTableEntry> movelist = reporting::get_ab_entry(comp_pos);
-    bool flipped = history_.Last().IsBlackToMove();
-    reporting::set_path_chosen(bool(movelist) && movelist.value().search_depth >= 5);
-
+        //if ab searching does not report this move as promising, don't search it
+        bool actual_should_move = !should_move
+                || should_move.value().should_move
+                || should_move.value().search_depth < sf_min_depth;
+       should_moves.push_back(actual_should_move);
+       any_set = any_set || actual_should_move;
+    }
+    int idx = 0;
     for (auto child : node->Edges()) {
       if (is_root_node) {
         // If there's no chance to catch up to the current best node with
@@ -969,27 +980,20 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
         }
         ++possible_moves;
       }
-
-      //if ab searching does not report this move as promising, don't search it
-      CompareableMove comp_move(child.GetMove(flipped).as_string());
-      if(movelist
-              && movelist.value().moves.size()
-              && movelist.value().search_depth >= sf_min_depth
-              && !contains(movelist.value().moves,comp_move)){
-         continue;
-     }
-
-      const float Q = child.GetQ(fpu);
-      const float score = child.GetU(puct_mult) + Q;
-      if (score > best) {
-        second_best = best;
-        second_best_edge = best_edge;
-        best = score;
-        best_edge = child;
-      } else if (score > second_best) {
-        second_best = score;
-        second_best_edge = child;
+      if(is_root_node || !any_set || should_moves.at(idx)){
+          const float Q = child.GetQ(fpu);
+          const float score = child.GetU(puct_mult) + Q;
+          if (score > best) {
+            second_best = best;
+            second_best_edge = best_edge;
+            best = score;
+            best_edge = child;
+          } else if (score > second_best) {
+            second_best = score;
+            second_best_edge = child;
+          }
       }
+      idx++;
     }
 
     if (second_best_edge) {
@@ -1383,6 +1387,13 @@ void SearchWorker::DoBackupUpdateSingleNode(
        CompareablePosition comp_pos = history_.Last().CompPos();
 
        reporting::set_mcts_entry(comp_pos,movelist,1);
+
+       for(auto child : cur_node->Edges()){
+           history_.Append(child.GetMove());
+           CompareablePosition comp_pos = history_.Last().CompPos();
+           reporting::set_child_entry(comp_pos,1);
+           history_.Pop();
+       }
    }
    history_.Trim(search_->played_history_.GetLength());
 }  // namespace lczero

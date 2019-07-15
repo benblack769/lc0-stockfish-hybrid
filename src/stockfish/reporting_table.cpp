@@ -41,24 +41,24 @@ static constexpr int MIN_SEARCH_NODES = 3;
 constexpr size_t INVALID_LOC = 0xff0000000000;
 
 struct TableEntry{
-    CompareableMoveList moves;
     CompareableMoveList moves_to_pos;
-    CompareableMove bestmove;
-    int bestmove_depth=-1;
     int64_t ab_time=0;
     size_t item_location=INVALID_LOC;//pointer to heap location
     int nodes_searched=0;
     int calced_search_depth=MIN_SEARCH_DEPTH-1;
     bool is_calulating=false;
+    bool should_move=true;
+    int parent_nodes_searched=0;
 };
 using heap_iter = typename unordered_map<CompareablePosition,TableEntry>::iterator;
 struct TimeRatioItem{
     std::pair<const CompareablePosition,TableEntry> * hash_ptr;
     int64_t ab_time;
     int mcts_nodes;
+    int mcts_parent_nodes;
     bool operator < (const TimeRatioItem & o)const{
         return ab_time && o.ab_time ?
-            (ab_time * o.mcts_nodes) > (mcts_nodes * o.ab_time) :
+            (o.mcts_nodes * ab_time * o.mcts_parent_nodes) > (mcts_nodes * o.ab_time * mcts_parent_nodes) :
             ab_time > o.ab_time;
     }
 };
@@ -72,36 +72,21 @@ class TimeRatioHeap{
     unordered_map<CompareablePosition,TableEntry> item_location;
     vector<TimeRatioItem> heap;
 public:
-    lczero::optional<ABTableEntry> moves(CompareablePosition pos){
-        heap_iter iter = item_location.find(pos);
-        if(iter == item_location.end()){
+    lczero::optional<ABTableEntry> should_move_to(CompareablePosition pos){
+        heap_iter h_iter = item_location.find(pos);
+        if(h_iter == item_location.end()){
             return lczero::optional<ABTableEntry>();
         }
-        else{
-            TableEntry & entry = iter->second;
-            CompareableMoveList return_moves = entry.moves;
-            if(entry.bestmove.is_set() &&
-                   !contains(return_moves,entry.bestmove)){
-                      return_moves.push_back(entry.bestmove);
-            }
-            return lczero::optional<ABTableEntry>(ABTableEntry{return_moves,iter->second.calced_search_depth});
-        }
+        TableEntry & entry = h_iter->second;
+        return lczero::optional<ABTableEntry>(ABTableEntry{entry.should_move,entry.calced_search_depth});
     }
-    //saves some search info, but clears it for next move
-    /*void new_search(){
-        heap.clear();
-        item_location.clear();
-    }*/
-    void finished_ab_calc(CompareablePosition pos, CompareableMoveList moves, int search_depth, int64_t ab_time_spent){
+    void finished_ab_calc(CompareablePosition pos, bool should_move, int search_depth, int64_t ab_time_spent){
         heap_iter h_iter = item_location.find(pos);
         if(h_iter == item_location.end()){
             throw runtime_error("got position without location");
         }
-        //if(pos.ep_diff(h_iter->first)){
-        //    return;//don't change value of node if en passant differnet
-        //}
         TableEntry & entry = h_iter->second;
-        entry.moves = moves;
+        entry.should_move = should_move;
         entry.ab_time += ab_time_spent;
         if(entry.calced_search_depth != search_depth){
             throw runtime_error("didn't increment search_depth properly");
@@ -119,30 +104,40 @@ public:
             rearange_item(entry.item_location);
         }
         else{*/
-        TimeRatioItem item = {&(*h_iter),entry.ab_time,entry.nodes_searched};
+        TimeRatioItem item = {&(*h_iter),entry.ab_time,entry.nodes_searched,entry.parent_nodes_searched};
         push_heap(item);
         //}
     }
     void update_mcts(CompareablePosition pos, CompareableMoveList moves_to_pos, int mcts_nodes){
         TableEntry & entry = item_location[pos];
         auto h_iter = item_location.find(pos);
-        //if(pos.ep_diff(h_iter->first)){
-        //    return;//don't change value of node if en passant differnet
-        //}
         entry.moves_to_pos = moves_to_pos;
         entry.nodes_searched += mcts_nodes;
         if(entry.is_calulating){
             return;
         }
         if(entry.item_location == INVALID_LOC){
-            push_heap(TimeRatioItem{&(*h_iter),entry.ab_time,entry.nodes_searched});
+            push_heap(TimeRatioItem{&(*h_iter),entry.ab_time,entry.nodes_searched,entry.parent_nodes_searched});
         }
         else{
             TimeRatioItem & item = heap.at(entry.item_location);
             item.ab_time = entry.ab_time;
             item.mcts_nodes = entry.nodes_searched;
+            item.mcts_parent_nodes = entry.parent_nodes_searched;
             rearange_item(entry.item_location);
         }
+    }
+    void set_parent_value(CompareablePosition position,int child_nodes_searched){
+        heap_iter h_iter = item_location.find(position);
+        if(h_iter == item_location.end()){
+            return;
+        }
+        TableEntry & entry = h_iter->second;
+        entry.parent_nodes_searched += child_nodes_searched;
+
+        TimeRatioItem & item = heap.at(entry.item_location);
+        item.mcts_parent_nodes = entry.parent_nodes_searched;
+        rearange_item(entry.item_location);
     }
     void clear(){
         item_location.clear();
@@ -167,29 +162,11 @@ public:
     SmallHistogram move_histogram(){
         SmallHistogram hist;
         for(const auto & pos_entry : item_location){
-            size_t entry = pos_entry.second.moves.size();
-            if(pos_entry.second.bestmove.is_set() &&
-                !contains(pos_entry.second.moves,pos_entry.second.bestmove)){
-                entry++;
-            }
+            size_t entry = pos_entry.second.should_move;
             size_t add = pos_entry.second.nodes_searched;
             hist.depth_reduction_histogram[entry] += add;
         }
         return hist;
-    }
-    void set_bestmove_if_exists(CompareablePosition pos, CompareableMove bestmove, int search_depth){
-        heap_iter h_iter = item_location.find(pos);
-        if(h_iter == item_location.end()){
-            return;
-        }
-        //if(pos.ep_diff(h_iter->first)){
-        //    return;//don't change value of node if en passant differnet
-        //}
-        TableEntry & entry = h_iter->second;
-        if(entry.bestmove_depth < search_depth){
-            entry.bestmove_depth = search_depth;
-            entry.bestmove = bestmove;
-        }
     }
 private:
     bool rearrange_up(size_t loc){
@@ -344,7 +321,7 @@ Parameters get_parameters(){
     return res;
 }
 TimeHeapReturn pop_calc_position(){
-    const std::chrono::milliseconds sleep_time(10);
+    const std::chrono::milliseconds sleep_time(5);
     while(true){
         global_lock.lock();
         if(!ratio_heap.empty()){
@@ -358,10 +335,10 @@ TimeHeapReturn pop_calc_position(){
     global_lock.unlock();
     return res;
 }
-void set_ab_entry(CompareablePosition position, CompareableMoveList moves, int search_depth, int64_t microseconds_spent){
+void set_ab_entry(CompareablePosition position, bool should_move, int search_depth, int64_t microseconds_spent){
     global_lock.lock();
 
-    ratio_heap.finished_ab_calc(position,moves,search_depth,microseconds_spent);
+    ratio_heap.finished_ab_calc(position,should_move,search_depth,microseconds_spent);
 
     global_lock.unlock();
 }
@@ -379,10 +356,10 @@ void set_mcts_entry(CompareablePosition position, CompareableMoveList moves_to_p
 
     global_lock.unlock();
 }
-void set_bestmove_if_exists(CompareablePosition position, CompareableMove bestmove, int bestmove_depth){
+void set_child_entry(CompareablePosition position, int child_nodes_searched){
     global_lock.lock();
 
-    ratio_heap.set_bestmove_if_exists(position,bestmove,bestmove_depth);
+    ratio_heap.set_parent_value(position,child_nodes_searched);
 
     global_lock.unlock();
 }
@@ -390,7 +367,7 @@ using ab_return_type = lczero::optional<ABTableEntry>;
 ab_return_type get_ab_entry(CompareablePosition position){
     global_lock.lock();
 
-    ab_return_type res = ratio_heap.moves(position);
+    ab_return_type res = ratio_heap.should_move_to(position);
 
     global_lock.unlock();
     return res;

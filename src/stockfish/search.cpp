@@ -158,8 +158,6 @@ namespace {
 
 } // namespace
 
-void set_pv_bestmoves(Position & pos,std::vector<Move>,int depth);
-
 /// Search::init() is called at startup to initialize various lookup tables
 
 void Search::init() {
@@ -477,7 +475,6 @@ void Thread::search() {
           std::stable_sort(rootMoves.begin() + pvFirst, rootMoves.begin() + pvIdx + 1);
 
           if(rootMoves.size() && rootMoves[0].pv.size()){
-              set_pv_bestmoves(rootPos,rootMoves[0].pv,rootDepth);
               if(bestValue >= VALUE_MATE_IN_MAX_PLY){
                   reporting::set_found_mate();
               }
@@ -553,21 +550,6 @@ void Thread::search() {
       std::swap(rootMoves[0], *std::find(rootMoves.begin(), rootMoves.end(),
                 skill.best ? skill.best : skill.pick_best(multiPV)));
 }
-void set_pv_bestmoves(Position & pos,std::vector<Move> moves,int depth){
-    if(moves.size() == 0){
-        return;
-    }
-    //this
-    Move bestmove = moves[0];
-    CompareableMove bestcmmove(UCI::move(bestmove,pos.is_chess960()));
-    reporting::set_bestmove_if_exists(pos.comp_pos(),bestcmmove,depth);
-
-    moves.erase(moves.begin());
-    StateInfo st;
-    pos.do_move(bestmove,st);
-    set_pv_bestmoves(pos,moves,depth-1);
-    pos.undo_move(bestmove);
-}
 lczero::optional<CompareableMove> get_bestmove_from_tt(Position & pos){
     bool ttHit = false;
     TTEntry* tte = EvalTT.probe(pos.key(), ttHit);
@@ -587,51 +569,18 @@ void calc_single_node(Position & pos, const CompareablePosition & comp_pos, cons
     constexpr int stack_size = MAX_PLY+7;
     Stack stack[stack_size];
     Stack * ss = stack + 4; // To reference from (ss-4) to (ss+2)
-    //if(is_root && minval > maxval){
-    //    std::cout << "serious failn" << std::endl;
-    //    std::exit(1);
-    //}
+    std::memcpy(stack, stack_initted, stack_size * sizeof(Stack));
 
-    CompareableMoveList all_ok_moves;
+    Depth new_depth_v = static_cast<Depth>(calc_depth);
 
-    int new_depth = calc_depth;
-    Depth new_depth_v = static_cast<Depth>(new_depth);
+    Value reduced_beta_value;
+    int64_t microseconds_spent = reporting::time_microseconds([&](){
 
-    MoveList<LEGAL> all_moves(pos);
-    int64_t total_microseconds_spent = 0;
-    for(Move move : all_moves){
-        if(move == MOVE_NONE || !pos.legal(move)){
-            std::cout << "\n\nmove failed!\n\n\n";
-            continue;
-        }
+    reduced_beta_value = -search<NonPV>(pos, EvalTT, ss, -(minval+1), -minval, new_depth_v, false);
 
-        StateInfo st;
-        pos.do_move(move,st);
-
-        std::memcpy(stack, stack_initted, stack_size * sizeof(Stack));
-        Value reduced_beta_value;
-        int64_t microseconds_spent = reporting::time_microseconds([&](){
-
-        reduced_beta_value = -search<NonPV>(pos, EvalTT, ss, -(minval+1), -minval, new_depth_v, false);
-        /*if(reduced_beta_value <= minval){
-            new_depth_v = static_cast<Depth>(new_depth+1);
-            reduced_beta_value = -search<NonPV>(pos, TT, ss, -(minval+1), -minval, new_depth_v, false);
-        }*/
-
-        });
-        total_microseconds_spent += microseconds_spent;
-        if(reduced_beta_value > minval){
-            auto move_opt = get_bestmove_from_tt(pos);
-            CompareableMove comp_move(UCI::move(move,pos.is_chess960()));
-            all_ok_moves.push_back(comp_move);
-            if(move_opt){
-                // a lot  of child moves are missing, so don't worry about them
-                reporting::set_bestmove_if_exists(pos.comp_pos(),move_opt.value(),new_depth_v);
-            }
-        }
-        pos.undo_move(move);
-    }
-    reporting::set_ab_entry(comp_pos,all_ok_moves,new_depth_v,total_microseconds_spent);
+    });
+    bool should_move = (reduced_beta_value > minval);
+    reporting::set_ab_entry(comp_pos,should_move,new_depth_v,microseconds_spent);
 }
 int cp_to_stockfish_eval(int cp){
     return (cp * PawnValueEg) / 100;
@@ -1850,7 +1799,7 @@ string UCI::pv(const Position& pos, Depth depth, Value alpha, Value beta) {
             ss << " choices " << (glob_entry.not_guided_choices+glob_entry.guided_choices);
             ss << " rootdepth " << entry.value().search_depth;
             //ss << " rootval " << UCI::value(reporting::get_bestvalue());
-          ss << " rootoptions " << entry.value().moves.size();
+          //ss << " rootoptions " << entry.value().moves.size();
           ss << " movehist " << reporting::move_histogram();
           ss << "\n";
       }
