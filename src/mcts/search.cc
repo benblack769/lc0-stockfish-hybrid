@@ -430,6 +430,9 @@ void Search::UpdateRemainingMoves() {
                            (total_playouts_ + kSmartPruningToleranceNodes) /
                            time_since_start +
                        1;
+        //if(nps > 2000){
+        //    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        //}
       const int64_t remaining_time = GetTimeToDeadline();
       // Put early_exit scaler here so calculation doesn't have to be done on
       // every node.

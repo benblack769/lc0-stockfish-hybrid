@@ -25,9 +25,10 @@ import chess.pgn
 import os
 import multiprocessing
 import json
+import time
 
-starttime = 15*60*1000
-inctime = 10*1000
+starttime = 5*60*1000
+inctime = 3*1000
 
 def get_bestmove(file,outfile):
     num_lines_split = 0
@@ -129,9 +130,11 @@ class Engine:
 
     def close(self):
         self.process.terminate()
+        time.sleep(0.1)
+        self.process.kill()
+        time.sleep(0.1)
 
         self.stdoutfile.close()
-
 
 
 def board_to_pgn(e1,e2,board,result,write_file,write_idx):
@@ -156,21 +159,21 @@ def board_to_pgn(e1,e2,board,result,write_file,write_idx):
     #write_file.write(repr(game))
     #return
 
-def create_engines(e1info,e2info,game_idx):
+def create_engine(einfo,game_idx):
     PIPE = subprocess.PIPE
-    eng1_proc = subprocess.Popen("exec {}".format(e1info['engine_path']),stdin=PIPE,stdout=PIPE,shell=True)
-    eng2_proc = subprocess.Popen("exec {}".format(e2info['engine_path']),stdin=PIPE,stdout=PIPE,shell=True)
+    eng_proc = subprocess.Popen("exec {}".format(einfo['engine_path']),stdin=PIPE,stdout=PIPE,shell=True)
     #eng2_proc = subprocess.Popen([e2name],stdin=open(write2_fifo),stdout=open(read2_fifo,'w'))
-    write1 = eng1_proc.stdin #open(write1_fifo,'w')
-    write2 = eng2_proc.stdin #open(write2_fifo,'w')
-    read1 = eng1_proc.stdout #open(read1_fifo,'r')
-    read2 = eng2_proc.stdout #open(read2_fifo,'r')
+    write = eng_proc.stdin #open(write1_fifo,'w')
+    read = eng_proc.stdout #open(read1_fifo,'r')
 
-    engine1 = Engine(e1info,eng1_proc,read1,write1,game_idx)
-    engine2 = Engine(e2info,eng2_proc,read2,write2,game_idx)
+    engine = Engine(einfo,eng_proc,read,write,game_idx)
 
-    return engine1,engine2
+    return engine
 
+
+
+def create_engines(e1info,e2info,game_idx):
+    return create_engine(e1info,game_idx),create_engine(e2info,game_idx)
 
 def process_game(eng1,eng2,game_idx):
 
@@ -201,8 +204,7 @@ def process_game(eng1,eng2,game_idx):
                 break
             except (subprocess.CalledProcessError,RuntimeError,ValueError) as err:
                 cur_eng.close()
-                prev_eng.close()
-                cur_eng,prev_eng = create_engines(cur_eng.info,prev_eng.info,game_idx)
+                cur_eng = create_engine(cur_eng.info,game_idx)
                 with open("games/{}crash_log".format(game_idx),'a') as crash_log:
                     crash_log.write("ERROR in {}:\n{}\n\n".format(cur_eng.name,str(err)))
 

@@ -18,6 +18,7 @@ class InfoCollector:
         self.rootmovesdepth = None
         self.time_move = None
         self.depth = None
+        self.nps = None
         self.seldepth = None
         self.bestprevmove = None
         self.bestsfprevmove = None
@@ -39,8 +40,6 @@ class InfoCollector:
     def set_info(self,uci_line):
         if "otherinfo" in uci_line:
             self.rootmovesdepth = (get_value_by_name(uci_line,"rootdepth"))
-            self.rootmoves = (get_value_by_name(uci_line,"rootoptions"))
-            self.allowed_move_dict = get_value_by_name(uci_line,"rootoptions")
         elif "short_info" in  uci_line:
             #nothing of use in this string
             pass
@@ -56,6 +55,8 @@ class InfoCollector:
             #    self.pv = pv_str
             if "depth" in uci_line:
                 self.depth = get_value_by_name(uci_line,"depth")
+            if "nps" in uci_line:
+                self.nps = get_value_by_name(uci_line,"nps")
             if "time" in uci_line:
                 self.time_move = get_value_by_name(uci_line,"time")
             if "seldepth" in uci_line:
