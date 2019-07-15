@@ -946,6 +946,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
 
     std::vector<char> should_moves;
     bool any_set = false;
+    bool all_active = true;
     for (auto child : node->Edges()) {
         history_.Append(child.GetMove());
         CompareablePosition comp_pos = history_.Last().CompPos();
@@ -954,11 +955,10 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
         reporting::set_path_chosen(bool(should_move) && should_move.value().search_depth >= sf_min_depth);
 
         //if ab searching does not report this move as promising, don't search it
-        bool actual_should_move = !should_move
-                || should_move.value().should_move
-                || should_move.value().search_depth < sf_min_depth;
+        bool actual_should_move = !should_move || should_move.value().should_move;
        should_moves.push_back(actual_should_move);
        any_set = any_set || actual_should_move;
+       all_active = all_active && should_move && should_move.value().search_depth >= sf_min_depth;
     }
     int idx = 0;
     for (auto child : node->Edges()) {
@@ -980,7 +980,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
         }
         ++possible_moves;
       }
-      if(is_root_node || !any_set || should_moves.at(idx)){
+      if(is_root_node || !any_set || !all_active || should_moves.at(idx)){
           const float Q = child.GetQ(fpu);
           const float score = child.GetU(puct_mult) + Q;
           if (score > best) {
@@ -1389,10 +1389,13 @@ void SearchWorker::DoBackupUpdateSingleNode(
        reporting::set_mcts_entry(comp_pos,movelist,1);
 
        for(auto child : cur_node->Edges()){
+           std::string movestr = child.GetMove(history_.IsBlackToMove()).as_string();
+           movelist.push_back(CompareableMove(movestr));
            history_.Append(child.GetMove());
            CompareablePosition comp_pos = history_.Last().CompPos();
-           reporting::set_child_entry(comp_pos,1);
+           reporting::set_child_entry(comp_pos,movelist,1);
            history_.Pop();
+           movelist.pop_back();
        }
    }
    history_.Trim(search_->played_history_.GetLength());

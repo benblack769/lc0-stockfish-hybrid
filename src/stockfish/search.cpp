@@ -576,7 +576,7 @@ void calc_single_node(Position & pos, const CompareablePosition & comp_pos, cons
     Value reduced_beta_value;
     int64_t microseconds_spent = reporting::time_microseconds([&](){
 
-    reduced_beta_value = -search<NonPV>(pos, EvalTT, ss, -(minval+1), -minval, new_depth_v, false);
+    reduced_beta_value = search<NonPV>(pos, EvalTT, ss, (minval-1), minval, new_depth_v, false);
 
     });
     bool should_move = (reduced_beta_value > minval);
@@ -625,7 +625,7 @@ void MCTSThread::search(){
         int opp_bound = cp_to_stockfish_eval(bounds.stockfish_opponent_tolerance);
         int mover_bound = cp_to_stockfish_eval(bounds.stockfish_mover_tolerance);
 
-        Value opp_minval = -(bestval + opp_bound);
+        Value opp_minval = -bestval - opp_bound;
         Value minval = bestval - mover_bound;
         Color cur_side_to_move = rootPos.side_to_move();
 

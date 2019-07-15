@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <stdexcept>
+#include <cmath>
 #include <queue>
 #include <utility>
 #include "reporting_table.h"
@@ -50,16 +51,17 @@ struct TableEntry{
     bool should_move=true;
     int parent_nodes_searched=0;
 };
+double heap_val(const TableEntry & te){
+    double num = te.parent_nodes_searched * sqrt(double(10+te.nodes_searched));
+    double denom = te.ab_time == 0 ? 10e50 : 1.0 / te.ab_time;
+    return num * denom;
+}
 using heap_iter = typename unordered_map<CompareablePosition,TableEntry>::iterator;
 struct TimeRatioItem{
     std::pair<const CompareablePosition,TableEntry> * hash_ptr;
-    int64_t ab_time;
-    int mcts_nodes;
-    int mcts_parent_nodes;
+    double val;
     bool operator < (const TimeRatioItem & o)const{
-        return ab_time && o.ab_time ?
-            (o.mcts_nodes * ab_time * o.mcts_parent_nodes) > (mcts_nodes * o.ab_time * mcts_parent_nodes) :
-            ab_time > o.ab_time;
+        return val < o.val;
     }
 };
 
@@ -104,7 +106,7 @@ public:
             rearange_item(entry.item_location);
         }
         else{*/
-        TimeRatioItem item = {&(*h_iter),entry.ab_time,entry.nodes_searched,entry.parent_nodes_searched};
+        TimeRatioItem item = {&(*h_iter),heap_val(entry)};
         push_heap(item);
         //}
     }
@@ -117,27 +119,27 @@ public:
             return;
         }
         if(entry.item_location == INVALID_LOC){
-            push_heap(TimeRatioItem{&(*h_iter),entry.ab_time,entry.nodes_searched,entry.parent_nodes_searched});
+            push_heap(TimeRatioItem{&(*h_iter),heap_val(entry)});
         }
         else{
             TimeRatioItem & item = heap.at(entry.item_location);
-            item.ab_time = entry.ab_time;
-            item.mcts_nodes = entry.nodes_searched;
-            item.mcts_parent_nodes = entry.parent_nodes_searched;
+            item.val = heap_val(entry);
             rearange_item(entry.item_location);
         }
     }
-    void set_parent_value(CompareablePosition position,int child_nodes_searched){
+    void set_parent_value(CompareablePosition position, const CompareableMoveList & moves_to_pos, int child_nodes_searched){
         heap_iter h_iter = item_location.find(position);
         if(h_iter == item_location.end()){
-            return;
+            this->update_mcts(position,moves_to_pos,0);
+            h_iter = item_location.find(position);
         }
         TableEntry & entry = h_iter->second;
         entry.parent_nodes_searched += child_nodes_searched;
-
-        TimeRatioItem & item = heap.at(entry.item_location);
-        item.mcts_parent_nodes = entry.parent_nodes_searched;
-        rearange_item(entry.item_location);
+        if(entry.item_location != INVALID_LOC){
+            TimeRatioItem & item = heap.at(entry.item_location);
+            item.val = heap_val(entry);
+            rearange_item(entry.item_location);
+        }
     }
     void clear(){
         item_location.clear();
@@ -356,10 +358,10 @@ void set_mcts_entry(CompareablePosition position, CompareableMoveList moves_to_p
 
     global_lock.unlock();
 }
-void set_child_entry(CompareablePosition position, int child_nodes_searched){
+void set_child_entry(CompareablePosition position, const CompareableMoveList & moves_to_pos, int child_nodes_searched){
     global_lock.lock();
 
-    ratio_heap.set_parent_value(position,child_nodes_searched);
+    ratio_heap.set_parent_value(position,moves_to_pos,child_nodes_searched);
 
     global_lock.unlock();
 }

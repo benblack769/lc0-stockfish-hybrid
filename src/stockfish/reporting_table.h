@@ -81,7 +81,7 @@ void clear();
 //bool should_set_entry(Key key, int depth,int search_depth,Value val);
 void set_ab_entry(CompareablePosition position,bool should_move,int search_depth, int64_t microseconds_spent);
 void set_mcts_entry(CompareablePosition position, CompareableMoveList moves_to_pos, int nodes_searched);
-void set_child_entry(CompareablePosition position, int nodes_searched);
+void set_child_entry(CompareablePosition position, const CompareableMoveList & moves_to_pos, int child_nodes_searched);
 TimeHeapReturn pop_calc_position();
 lczero::optional<ABTableEntry> get_ab_entry(CompareablePosition position);
 void debug();
