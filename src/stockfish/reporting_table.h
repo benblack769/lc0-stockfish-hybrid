@@ -48,10 +48,15 @@ struct ABTableEntry{
     CompareableMoveList moves;
     int search_depth;
 };
+struct MCTSTableEntry{
+    int search_nodes;
+    float val;
+};
 struct GlobalCollectionInfo{
     int guided_choices=0;
     int not_guided_choices=0;
     bool found_mate = false;
+    float mcts_bestval=0;
 };
 
 struct TimeHeapReturn{
@@ -80,10 +85,11 @@ struct Parameters{
 void clear();
 //bool should_set_entry(Key key, int depth,int search_depth,Value val);
 void set_ab_entry(CompareablePosition position,CompareableMoveList moves,int search_depth, int64_t microseconds_spent);
-void set_mcts_entry(CompareablePosition position, CompareableMoveList moves_to_pos, int nodes_searched);
+void set_mcts_entry(CompareablePosition position, CompareableMoveList moves_to_pos, float val, int nodes_searched);
 void set_bestmove_if_exists(CompareablePosition position, CompareableMove bestmove, int bestmove_depth);
 TimeHeapReturn pop_calc_position();
 lczero::optional<ABTableEntry> get_ab_entry(CompareablePosition position);
+lczero::optional<MCTSTableEntry> get_mcts_entry(CompareablePosition position);
 void debug();
 void set_parameters(Parameters params);
 Parameters get_parameters();
@@ -100,6 +106,10 @@ void set_bestvalue(Value bestval,int depth);
 void set_path_chosen(bool guided);
 Value get_bestvalue();
 int get_bestvalue_depth();
+void set_mcts_bestvalue(float bestval);
+inline float get_mcts_bestval(){
+    return get_info().mcts_bestval;
+}
 
 template<class FnTy>
 inline int64_t time_microseconds(FnTy fn){

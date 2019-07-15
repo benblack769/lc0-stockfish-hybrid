@@ -1204,6 +1204,16 @@ moves_loop: // When in check, search starts from here
       // Step 15. Make the move
       pos.do_move(move, st, givesCheck);
 
+      int mcts_alt_v = 0;
+      if(depth > 5 && !PvNode){
+          lczero::optional<MCTSTableEntry> entry = reporting::get_mcts_entry(pos.comp_pos());
+          if(entry && entry.value().search_nodes > 20){
+              float prob_diff = entry.value().val - reporting::get_mcts_bestval();
+              mcts_alt_v = int(prob_diff * 295);
+          }
+      }
+      Value alt_alpha = alpha - mcts_alt_v;
+
       // Step 16. Reduced depth search (LMR). If the move fails high it will be
       // re-searched at full depth.
       if (    depth >= 3 * ONE_PLY
@@ -1256,7 +1266,7 @@ moves_loop: // When in check, search starts from here
 
           Depth d = std::max(newDepth - std::max(r, DEPTH_ZERO), ONE_PLY);
 
-          value = -search<NonPV>(pos, TT, ss+1, -(alpha+1), -alpha, d, true);
+          value = -search<NonPV>(pos, TT, ss+1, -(alt_alpha+1), -alt_alpha, d, true) + mcts_alt_v;
           doFullDepthSearch = (value > alpha && d != newDepth);
       }
       else
@@ -1264,8 +1274,7 @@ moves_loop: // When in check, search starts from here
 
       // Step 17. Full depth search when LMR is skipped or fails high
       if (doFullDepthSearch)
-          value = -search<NonPV>(pos, TT, ss+1, -(alpha+1), -alpha, newDepth, !cutNode);
-
+          value = -search<NonPV>(pos, TT, ss+1, -(alt_alpha+1), -alt_alpha, newDepth, !cutNode) + mcts_alt_v;
 
       // For PV nodes only, do a full PV search on the first move or after a fail
       // high (in the latter case search only if value < beta), otherwise let the

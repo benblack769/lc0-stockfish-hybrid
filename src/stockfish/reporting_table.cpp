@@ -45,6 +45,7 @@ struct TableEntry{
     CompareableMoveList moves_to_pos;
     CompareableMove bestmove;
     int bestmove_depth=-1;
+    double mcts_eval=0;
     int64_t ab_time=0;
     size_t item_location=INVALID_LOC;//pointer to heap location
     int nodes_searched=0;
@@ -87,6 +88,16 @@ public:
             return lczero::optional<ABTableEntry>(ABTableEntry{return_moves,iter->second.calced_search_depth});
         }
     }
+    lczero::optional<MCTSTableEntry> mcts_val(CompareablePosition pos){
+        heap_iter iter = item_location.find(pos);
+        if(iter == item_location.end()){
+            return lczero::optional<MCTSTableEntry>();
+        }
+        else{
+            TableEntry & entry = iter->second;
+            return lczero::optional<MCTSTableEntry>(MCTSTableEntry{entry.nodes_searched,float(entry.mcts_eval)});
+        }
+    }
     //saves some search info, but clears it for next move
     /*void new_search(){
         heap.clear();
@@ -123,12 +134,13 @@ public:
         push_heap(item);
         //}
     }
-    void update_mcts(CompareablePosition pos, CompareableMoveList moves_to_pos, int mcts_nodes){
+    void update_mcts(CompareablePosition pos, CompareableMoveList moves_to_pos, float val, int mcts_nodes){
         TableEntry & entry = item_location[pos];
         auto h_iter = item_location.find(pos);
         //if(pos.ep_diff(h_iter->first)){
         //    return;//don't change value of node if en passant differnet
         //}
+        entry.mcts_eval = (entry.mcts_eval * entry.nodes_searched + val * mcts_nodes) / (entry.nodes_searched + mcts_nodes);
         entry.moves_to_pos = moves_to_pos;
         entry.nodes_searched += mcts_nodes;
         if(entry.is_calulating){
@@ -372,10 +384,10 @@ void set_found_mate(){
 
     global_lock.unlock();
 }
-void set_mcts_entry(CompareablePosition position, CompareableMoveList moves_to_pos, int nodes_searched){
+void set_mcts_entry(CompareablePosition position, CompareableMoveList moves_to_pos, float val, int nodes_searched){
     global_lock.lock();
 
-    ratio_heap.update_mcts(position,moves_to_pos,nodes_searched);
+    ratio_heap.update_mcts(position,moves_to_pos,val,nodes_searched);
 
     global_lock.unlock();
 }
@@ -395,6 +407,16 @@ ab_return_type get_ab_entry(CompareablePosition position){
     global_lock.unlock();
     return res;
 }
+using mcts_return_type = lczero::optional<MCTSTableEntry>;
+mcts_return_type get_mcts_entry(CompareablePosition position){
+    global_lock.lock();
+
+    mcts_return_type res = ratio_heap.mcts_val(position);
+
+    global_lock.unlock();
+    return res;
+}
+
 
 void debug(){
     global_lock.lock();
@@ -411,6 +433,12 @@ void set_path_chosen(bool guided){
     else{
         cur_glob_info.not_guided_choices++;
     }
+    global_lock.unlock();
+}
+
+void set_mcts_bestvalue(float bestval){
+    global_lock.lock();
+    cur_glob_info.mcts_bestval = bestval;
     global_lock.unlock();
 }
 

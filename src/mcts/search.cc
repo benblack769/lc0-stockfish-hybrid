@@ -1297,6 +1297,8 @@ void SearchWorker::DoBackupUpdate() {
   for (const NodeToProcess& node_to_process : minibatch_) {
     DoBackupUpdateSingleNode(node_to_process);
   }
+  float rootval = -search_->root_node_->GetQ();
+  reporting::set_mcts_bestvalue(rootval);
 }
 
 void SearchWorker::DoBackupUpdateSingleNode(
@@ -1385,7 +1387,7 @@ void SearchWorker::DoBackupUpdateSingleNode(
        }
        CompareablePosition comp_pos = history_.Last().CompPos();
 
-       reporting::set_mcts_entry(comp_pos,movelist,1);
+       reporting::set_mcts_entry(comp_pos,movelist,-cur_node->GetQ(),1);
    }
    history_.Trim(search_->played_history_.GetLength());
 }  // namespace lczero
