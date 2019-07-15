@@ -134,7 +134,12 @@ void ThreadPool::set(size_t requested) {
       push_back(new MainThread(0));
       push_back(new MCTSThread(size()));
       while (int(size()) < int(requested)-1){
-          push_back(new MCTSThread(size()));
+          if(size() % 2 == 1){
+              push_back(new MCTSThread(size()));
+          }
+          else{
+              push_back(new Thread(size()));
+          }
       }
       clear();
   }

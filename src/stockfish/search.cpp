@@ -295,7 +295,7 @@ void MainThread::search() {
   if (bestThread != this)
       sync_cout << UCI::pv(bestThread->rootPos, bestThread->completedDepth, -VALUE_INFINITE, VALUE_INFINITE) << sync_endl;
 
-  string res_name = reporting::has_found_mate() ? "bestmove " : "best_ab_move ";
+  string res_name = "bestmove ";
   string res_str;
   res_str += res_name + UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
 
@@ -304,6 +304,7 @@ void MainThread::search() {
   res_str += "\n";
   sync_cout << res_str;
   write_out << sync_endl;
+  reporting::set_finished();
   //reporting::debug();
 }
 
@@ -474,11 +475,6 @@ void Thread::search() {
           // Sort the PV lines searched so far and update the GUI
           std::stable_sort(rootMoves.begin() + pvFirst, rootMoves.begin() + pvIdx + 1);
 
-          if(rootMoves.size() && rootMoves[0].pv.size()){
-              if(bestValue >= VALUE_MATE_IN_MAX_PLY){
-                  reporting::set_found_mate();
-              }
-          }
           if (    mainThread
               && (Threads.stop || pvIdx + 1 == multiPV || Time.elapsed() > 3000))
               sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
@@ -625,8 +621,8 @@ void MCTSThread::search(){
         int opp_bound = cp_to_stockfish_eval(bounds.stockfish_opponent_tolerance);
         int mover_bound = cp_to_stockfish_eval(bounds.stockfish_mover_tolerance);
 
-        Value opp_minval = -bestval - opp_bound;
-        Value minval = bestval - mover_bound;
+        Value opp_minval = -bestval;
+        Value minval = bestval;
         Color cur_side_to_move = rootPos.side_to_move();
 
         Position &  calc_pos = rootPos;

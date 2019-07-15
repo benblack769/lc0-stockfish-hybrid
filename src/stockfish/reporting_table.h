@@ -51,7 +51,7 @@ struct ABTableEntry{
 struct GlobalCollectionInfo{
     int guided_choices=0;
     int not_guided_choices=0;
-    bool found_mate = false;
+    bool is_finished=false;
 };
 
 struct TimeHeapReturn{
@@ -81,7 +81,6 @@ void clear();
 //bool should_set_entry(Key key, int depth,int search_depth,Value val);
 void set_ab_entry(CompareablePosition position,bool should_move,int search_depth, int64_t microseconds_spent);
 void set_mcts_entry(CompareablePosition position, CompareableMoveList moves_to_pos, int nodes_searched);
-void set_child_entry(CompareablePosition position, const CompareableMoveList & moves_to_pos, int child_nodes_searched);
 TimeHeapReturn pop_calc_position();
 lczero::optional<ABTableEntry> get_ab_entry(CompareablePosition position);
 void debug();
@@ -89,10 +88,6 @@ void set_parameters(Parameters params);
 Parameters get_parameters();
 GlobalCollectionInfo get_info();
 SmallHistogram move_histogram();
-void set_found_mate();
-inline bool has_found_mate(){
-    return get_info().found_mate;
-}
 //void print_results();
 //void save_to_file(std::string fname);
 //std::vector<std::pair<CompareablePosition,int>> pos_vals();
@@ -100,6 +95,10 @@ void set_bestvalue(Value bestval,int depth);
 void set_path_chosen(bool guided);
 Value get_bestvalue();
 int get_bestvalue_depth();
+void set_finished();
+inline bool get_finished(){
+    return get_info().is_finished;
+}
 
 template<class FnTy>
 inline int64_t time_microseconds(FnTy fn){

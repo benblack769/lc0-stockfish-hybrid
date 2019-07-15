@@ -127,20 +127,6 @@ public:
             rearange_item(entry.item_location);
         }
     }
-    void set_parent_value(CompareablePosition position, const CompareableMoveList & moves_to_pos, int child_nodes_searched){
-        heap_iter h_iter = item_location.find(position);
-        if(h_iter == item_location.end()){
-            this->update_mcts(position,moves_to_pos,0);
-            h_iter = item_location.find(position);
-        }
-        TableEntry & entry = h_iter->second;
-        entry.parent_nodes_searched += child_nodes_searched;
-        if(entry.item_location != INVALID_LOC){
-            TimeRatioItem & item = heap.at(entry.item_location);
-            item.val = heap_val(entry);
-            rearange_item(entry.item_location);
-        }
-    }
     void clear(){
         item_location.clear();
         heap.clear();
@@ -344,24 +330,10 @@ void set_ab_entry(CompareablePosition position, bool should_move, int search_dep
 
     global_lock.unlock();
 }
-void set_found_mate(){
-    global_lock.lock();
-
-    cur_glob_info.found_mate = true;
-
-    global_lock.unlock();
-}
 void set_mcts_entry(CompareablePosition position, CompareableMoveList moves_to_pos, int nodes_searched){
     global_lock.lock();
 
     ratio_heap.update_mcts(position,moves_to_pos,nodes_searched);
-
-    global_lock.unlock();
-}
-void set_child_entry(CompareablePosition position, const CompareableMoveList & moves_to_pos, int child_nodes_searched){
-    global_lock.lock();
-
-    ratio_heap.set_parent_value(position,moves_to_pos,child_nodes_searched);
 
     global_lock.unlock();
 }
@@ -418,6 +390,11 @@ int get_bestvalue_depth(){
     int d = curdepth;
     bestval_mutex.unlock();
     return d;
+}
+void set_finished(){
+    global_lock.lock();
+    cur_glob_info.is_finished = true;
+    global_lock.unlock();
 }
 
 }

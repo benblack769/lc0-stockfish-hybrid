@@ -63,7 +63,4 @@ std::string get_command_line(){
 
     return res;
 }
-void run_go_command(){
-    run_command("go infinite");
-}
 }
