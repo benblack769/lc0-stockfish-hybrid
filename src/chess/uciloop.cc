@@ -250,7 +250,7 @@ void UciLoop::SendBestMove(const BestMoveInfo& move) {
 void UciLoop::SendInfo(const std::vector<ThinkingInfo>& infos) {
   std::vector<std::string> reses;
   for (const auto& info : infos) {
-    std::string res = "info";
+    std::string res = "mcts_info";
     if (info.player != -1) res += " player " + std::to_string(info.player);
     if (info.game_id != -1) res += " gameid " + std::to_string(info.game_id);
     if (info.is_black)

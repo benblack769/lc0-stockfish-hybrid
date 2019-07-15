@@ -52,7 +52,7 @@ struct TableEntry{
     int parent_nodes_searched=0;
 };
 double heap_val(const TableEntry & te){
-    double num = te.parent_nodes_searched * sqrt(double(10+te.nodes_searched));
+    double num = te.nodes_searched;
     double denom = te.ab_time == 0 ? 10e50 : 1.0 / te.ab_time;
     return num * denom;
 }

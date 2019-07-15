@@ -621,8 +621,8 @@ void MCTSThread::search(){
         int opp_bound = cp_to_stockfish_eval(bounds.stockfish_opponent_tolerance);
         int mover_bound = cp_to_stockfish_eval(bounds.stockfish_mover_tolerance);
 
-        Value opp_minval = -bestval;
-        Value minval = bestval;
+        Value opp_minval = -bestval+8;
+        Value minval = bestval+8;
         Color cur_side_to_move = rootPos.side_to_move();
 
         Position &  calc_pos = rootPos;
@@ -1763,7 +1763,7 @@ string UCI::pv(const Position& pos, Depth depth, Value alpha, Value beta) {
       if (ss.rdbuf()->in_avail()) // Not at first line
           ss << "\n";
 
-      ss << "sf_info"
+      ss << "info"
          << " depth "    << d / ONE_PLY
          << " seldepth " << rootMoves[i].selDepth
          << " multipv "  << i + 1
