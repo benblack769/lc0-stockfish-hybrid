@@ -49,7 +49,7 @@ struct SearchLimits {
   std::int64_t visits = 4000000000;
   std::int64_t playouts = -1;
   int depth = -1;
-  optional<std::chrono::steady_clock::time_point> search_deadline;
+  optional<std::chrono::system_clock::time_point> search_deadline;
   bool infinite = false;
   MoveList searchmoves;
 
@@ -165,9 +165,9 @@ class Search {
 
   Network* const network_;
   const SearchLimits limits_;
-  const std::chrono::steady_clock::time_point start_time_;
+  const std::chrono::system_clock::time_point start_time_;
   const int64_t initial_visits_;
-  optional<std::chrono::steady_clock::time_point> nps_start_time_;
+  optional<std::chrono::system_clock::time_point> nps_start_time_;
 
   mutable SharedMutex nodes_mutex_;
   EdgeAndNode current_best_edge_ GUARDED_BY(nodes_mutex_);

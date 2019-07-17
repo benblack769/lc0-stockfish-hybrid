@@ -45,7 +45,7 @@ static_assert(sizeof(TimePoint) == sizeof(int64_t), "TimePoint should be 64 bits
 
 inline TimePoint now() {
   return std::chrono::duration_cast<std::chrono::milliseconds>
-        (std::chrono::steady_clock::now().time_since_epoch()).count();
+        (std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
 template<class Entry, int Size>

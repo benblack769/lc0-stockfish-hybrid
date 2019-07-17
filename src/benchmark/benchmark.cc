@@ -69,7 +69,7 @@ void Benchmark::Run() {
     NNCache cache;
     cache.SetCapacity(option_dict.Get<int>(kNNCacheSizeId.GetId()));
 
-    const auto start = std::chrono::steady_clock::now();
+    const auto start = std::chrono::system_clock::now();
 
     SearchLimits limits;
     int visits = option_dict.Get<int>(kNodesId.GetId());
@@ -91,7 +91,7 @@ void Benchmark::Run() {
 
     search->Wait();
 
-    const auto end = std::chrono::steady_clock::now();
+    const auto end = std::chrono::system_clock::now();
     std::chrono::duration<double> time = end - start;
     std::cout << "Benchmark final time " << time.count() << "s calculating "
               << search->GetTotalPlayouts() / time.count()

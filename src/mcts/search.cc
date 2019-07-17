@@ -76,7 +76,7 @@ Search::Search(const NodeTree& tree, Network* network,
       played_history_(tree.GetPositionHistory()),
       network_(network),
       limits_(limits),
-      start_time_(std::chrono::steady_clock::now()),
+      start_time_(std::chrono::system_clock::now()),
       initial_visits_(root_node_->GetN()),
       best_move_callback_(best_move_callback),
       info_callback_(info_callback),
@@ -182,14 +182,14 @@ void Search::MaybeOutputInfo() {
 
 int64_t Search::GetTimeSinceStart() const {
   return std::chrono::duration_cast<std::chrono::milliseconds>(
-             std::chrono::steady_clock::now() - start_time_)
+             std::chrono::system_clock::now() - start_time_)
       .count();
 }
 
 int64_t Search::GetTimeToDeadline() const {
   if (!limits_.search_deadline) return 0;
   return std::chrono::duration_cast<std::chrono::milliseconds>(
-             *limits_.search_deadline - std::chrono::steady_clock::now())
+             *limits_.search_deadline - std::chrono::system_clock::now())
       .count();
 }
 
@@ -414,16 +414,35 @@ void Search::MaybeTriggerStop() {
 }
 
 void Search::UpdateRemainingMoves() {
+
+    while(true){
+
+    const auto time_since_start =
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          std::chrono::system_clock::now() - *nps_start_time_)
+          .count();
+    const auto simuls = initial_visits_ + total_playouts_;
+  const auto nps = (1000.0 *
+                       simuls) /
+                       (time_since_start+1);
+                     // std::cout << nps  << std::endl;
+    if(nps > 3500){
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+    else{
+        break;
+    }
+}
   if (params_.GetSmartPruningFactor() <= 0.0f) return;
   SharedMutex::Lock lock(nodes_mutex_);
   remaining_playouts_ = std::numeric_limits<int>::max();
   // Check for how many playouts there is time remaining.
   if (limits_.search_deadline && !nps_start_time_) {
-    nps_start_time_ = std::chrono::steady_clock::now();
+    nps_start_time_ = std::chrono::system_clock::now();
   } else if (limits_.search_deadline) {
     const auto time_since_start =
         std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now() - *nps_start_time_)
+            std::chrono::system_clock::now() - *nps_start_time_)
             .count();
     if (time_since_start > kSmartPruningToleranceMs) {
       const auto nps = 1000LL *

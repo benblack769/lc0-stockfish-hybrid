@@ -86,7 +86,7 @@ void SelfPlayGame::Play(int white_threads, int black_threads, bool training,
     }
     if (options_[idx].search_limits.movetime > -1) {
       options_[idx].search_limits.search_deadline =
-          std::chrono::steady_clock::now() +
+          std::chrono::system_clock::now() +
           std::chrono::milliseconds(options_[idx].search_limits.movetime);
     }
     {

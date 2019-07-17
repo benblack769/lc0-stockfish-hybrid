@@ -123,7 +123,7 @@ EngineController::EngineController(BestMoveInfo::Callback best_move_callback,
     : options_(options),
       best_move_callback_(best_move_callback),
       info_callback_(info_callback),
-      move_start_time_(std::chrono::steady_clock::now()) {}
+      move_start_time_(std::chrono::system_clock::now()) {}
 
 void EngineController::PopulateOptions(OptionsParser* options) {
   using namespace std::placeholders;
@@ -153,7 +153,7 @@ void EngineController::PopulateOptions(OptionsParser* options) {
 
 SearchLimits EngineController::PopulateSearchLimits(
     int ply, bool is_black, const GoParams& params,
-    std::chrono::steady_clock::time_point start_time) {
+    std::chrono::system_clock::time_point start_time) {
   SearchLimits limits;
   const int64_t move_overhead = options_.Get<int>(kMoveOverheadId.GetId());
   const optional<int64_t>& time = (is_black ? params.btime : params.wtime);
@@ -233,7 +233,7 @@ SearchLimits EngineController::PopulateSearchLimits(
   LOGFILE << "Budgeted time for the move: " << this_move_time << "ms(+"
           << time_to_squander << "ms to squander -"
           << std::chrono::duration_cast<std::chrono::milliseconds>(
-                 std::chrono::steady_clock::now() - start_time)
+                 std::chrono::system_clock::now() - start_time)
                  .count()
           << "ms already passed). Remaining time " << *time << "ms(-"
           << move_overhead << "ms overhead)";
@@ -280,13 +280,13 @@ void EngineController::EnsureReady() {
   std::unique_lock<RpSharedMutex> lock(busy_mutex_);
   // If a UCI host is waiting for our ready response, we can consider the move
   // not started until we're done ensuring ready.
-  move_start_time_ = std::chrono::steady_clock::now();
+  move_start_time_ = std::chrono::system_clock::now();
 }
 
 void EngineController::NewGame() {
   // In case anything relies upon defaulting to default position and just calls
   // newgame and goes straight into go.
-  move_start_time_ = std::chrono::steady_clock::now();
+  move_start_time_ = std::chrono::system_clock::now();
   SharedLock lock(busy_mutex_);
   cache_.Clear();
   search_.reset();
@@ -300,7 +300,7 @@ void EngineController::SetPosition(const std::string& fen,
                                    const std::vector<std::string>& moves_str) {
   // Some UCI hosts just call position then immediately call go, while starting
   // the clock on calling 'position'.
-  move_start_time_ = std::chrono::steady_clock::now();
+  move_start_time_ = std::chrono::system_clock::now();
   SharedLock lock(busy_mutex_);
   current_position_ = CurrentPosition{fen, moves_str};
   search_.reset();
@@ -378,7 +378,7 @@ void EngineController::Go(const GoParams& params) {
       if (limits.search_deadline) {
         time_spared_ms_ +=
             std::chrono::duration_cast<std::chrono::milliseconds>(
-                *limits.search_deadline - std::chrono::steady_clock::now())
+                *limits.search_deadline - std::chrono::system_clock::now())
                 .count();
       }
     };
@@ -396,7 +396,7 @@ void EngineController::Go(const GoParams& params) {
 }
 
 void EngineController::PonderHit() {
-  move_start_time_ = std::chrono::steady_clock::now();
+  move_start_time_ = std::chrono::system_clock::now();
   go_params_.ponder = false;
   Go(go_params_);
 }

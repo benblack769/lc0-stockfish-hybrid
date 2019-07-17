@@ -80,7 +80,7 @@ class EngineController {
 
   SearchLimits PopulateSearchLimits(int ply, bool is_black,
       const GoParams& params,
-      std::chrono::steady_clock::time_point start_time);
+      std::chrono::system_clock::time_point start_time);
 
  private:
   void UpdateFromUciOptions();
@@ -116,7 +116,7 @@ class EngineController {
 
   // How much less time was used by search than what was allocated.
   int64_t time_spared_ms_ = 0;
-  std::chrono::steady_clock::time_point move_start_time_;
+  std::chrono::system_clock::time_point move_start_time_;
 };
 
 class EngineLoop : public UciLoop {

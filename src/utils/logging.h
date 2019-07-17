@@ -73,7 +73,7 @@ class StderrLogMessage : public std::ostringstream {
 };
 
 std::chrono::time_point<std::chrono::system_clock> SteadyClockToSystemClock(
-    std::chrono::time_point<std::chrono::steady_clock> time);
+    std::chrono::time_point<std::chrono::system_clock> time);
 
 std::string FormatTime(std::chrono::time_point<std::chrono::system_clock> time);
 }  // namespace lczero
