@@ -297,7 +297,7 @@ void MainThread::search() {
   if (bestThread != this)
       sync_cout << UCI::pv(bestThread->rootPos, bestThread->completedDepth, -VALUE_INFINITE, VALUE_INFINITE) << sync_endl;
 
-  string res_name = reporting::has_found_mate() ? "bestmove " : "best_ab_move ";
+  string res_name = "bestmove ";
   string res_str;
   res_str += res_name + UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
 
@@ -1204,15 +1204,17 @@ moves_loop: // When in check, search starts from here
       // Step 15. Make the move
       pos.do_move(move, st, givesCheck);
 
-      int mcts_alt_v = 0;
+      int mcts_alt_v = -20;
       if(depth > 5 && !PvNode){
           lczero::optional<MCTSTableEntry> entry = reporting::get_mcts_entry(pos.comp_pos());
-          if(entry && entry.value().search_nodes > 20){
+          if(entry && entry.value().search_nodes > 0){
               float prob_diff = entry.value().val - reporting::get_mcts_bestval();
-              mcts_alt_v = int(prob_diff * 295);
+              mcts_alt_v = int(prob_diff * 295.0f * 0.5f);
+              std::cout << mcts_alt_v << "\n";
           }
       }
       Value alt_alpha = alpha - mcts_alt_v;
+      int add_alt_v = mcts_alt_v * 1.2;
 
       // Step 16. Reduced depth search (LMR). If the move fails high it will be
       // re-searched at full depth.
@@ -1266,7 +1268,7 @@ moves_loop: // When in check, search starts from here
 
           Depth d = std::max(newDepth - std::max(r, DEPTH_ZERO), ONE_PLY);
 
-          value = -search<NonPV>(pos, TT, ss+1, -(alt_alpha+1), -alt_alpha, d, true) + mcts_alt_v;
+          value = -search<NonPV>(pos, TT, ss+1, -(alt_alpha+1), -alt_alpha, d, true) + add_alt_v;
           doFullDepthSearch = (value > alpha && d != newDepth);
       }
       else
@@ -1274,7 +1276,7 @@ moves_loop: // When in check, search starts from here
 
       // Step 17. Full depth search when LMR is skipped or fails high
       if (doFullDepthSearch)
-          value = -search<NonPV>(pos, TT, ss+1, -(alt_alpha+1), -alt_alpha, newDepth, !cutNode) + mcts_alt_v;
+          value = -search<NonPV>(pos, TT, ss+1, -(alt_alpha+1), -alt_alpha, newDepth, !cutNode) + add_alt_v;
 
       // For PV nodes only, do a full PV search on the first move or after a fail
       // high (in the latter case search only if value < beta), otherwise let the
@@ -1827,7 +1829,7 @@ string UCI::pv(const Position& pos, Depth depth, Value alpha, Value beta) {
       if (ss.rdbuf()->in_avail()) // Not at first line
           ss << "\n";
 
-      ss << "sf_info"
+      ss << "info"
          << " depth "    << d / ONE_PLY
          << " seldepth " << rootMoves[i].selDepth
          << " multipv "  << i + 1

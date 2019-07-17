@@ -241,7 +241,7 @@ void UciLoop::SendId() {
 
 void UciLoop::SendBestMove(const BestMoveInfo& move) {
     bool has_mate = reporting::has_found_mate();
-    std::string res_name = has_mate ? "best_mcts_move " : "bestmove ";
+    std::string res_name ="best_mcts_move ";
   std::string res = res_name + move.bestmove.as_string();
   if (move.ponder) res += " ponder " + move.ponder.as_string();
   if (move.player != -1) res += " player " + std::to_string(move.player);
@@ -255,7 +255,7 @@ void UciLoop::SendBestMove(const BestMoveInfo& move) {
 void UciLoop::SendInfo(const std::vector<ThinkingInfo>& infos) {
   std::vector<std::string> reses;
   for (const auto& info : infos) {
-    std::string res = "info";
+    std::string res = "mcts_info";
     if (info.player != -1) res += " player " + std::to_string(info.player);
     if (info.game_id != -1) res += " gameid " + std::to_string(info.game_id);
     if (info.is_black)
