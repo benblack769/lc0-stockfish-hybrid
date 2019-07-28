@@ -912,7 +912,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
     if (node->IsTerminal() || !node->HasChildren()) {
       return NodeToProcess::Visit(node, depth);
     }
-    Node* possible_shortcut_child = node->GetCachedBestChild();
+    /*Node* possible_shortcut_child = node->GetCachedBestChild();
     if (possible_shortcut_child) {
       // Add two here to reverse the conservatism that goes into calculating the
       // remaining cache visits.
@@ -922,7 +922,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
       node = possible_shortcut_child;
       node_already_updated = true;
       continue;
-    }
+    }*/
     node_already_updated = false;
 
     // If we fall through, then n_in_flight_ has been incremented but this
@@ -1298,6 +1298,7 @@ void SearchWorker::DoBackupUpdateSingleNode(
       d = n->GetD();
     }
     n->FinalizeScoreUpdate(v, d, node_to_process.multivisit);
+    n->setMaxQ();
 
     // Convert parents to terminals except the root or those already converted.
     can_convert = can_convert && p != search_->root_node_ && !p->IsTerminal();
