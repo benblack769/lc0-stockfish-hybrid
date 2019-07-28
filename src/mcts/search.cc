@@ -416,17 +416,9 @@ void Search::MaybeTriggerStop() {
 void Search::UpdateRemainingMoves() {
 
     while(true){
-
-    const auto time_since_start =
-      std::chrono::duration_cast<std::chrono::milliseconds>(
-          std::chrono::system_clock::now() - *nps_start_time_)
-          .count();
-    const auto simuls = initial_visits_ + total_playouts_;
-  const auto nps = (1000.0 *
-                       simuls) /
-                       (time_since_start+1);
-                     // std::cout << nps  << std::endl;
-    if(nps > 3500){
+        int time = GetTimeSinceStart();
+        int nps = (total_playouts_ * 1000) / (time+1);
+    if(total_playouts_ > 5000 && nps > 5000){
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     else{

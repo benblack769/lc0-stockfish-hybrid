@@ -27,8 +27,8 @@ import multiprocessing
 import json
 import time
 
-starttime = 5*60*1000
-inctime = 3*1000
+starttime = 15*60*1000
+inctime = 10*1000
 
 def get_bestmove(file,outfile):
     num_lines_split = 0
@@ -130,9 +130,9 @@ class Engine:
 
     def close(self):
         self.process.terminate()
-        time.sleep(0.1)
+        time.sleep(1.0)
         self.process.kill()
-        time.sleep(0.1)
+        time.sleep(20.0)
 
         self.stdoutfile.close()
 
