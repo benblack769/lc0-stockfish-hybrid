@@ -263,13 +263,16 @@ void Node::CancelScoreUpdate(int multivisit) {
   n_in_flight_ -= multivisit;
   best_child_cached_ = nullptr;
 }
-void Node::setMaxQ(){
-    float max_val = -1;
+void Node::setMaxQ(int multivisit){
+    float max_val = -10;
     for(auto child : this->Edges()){
-        float cur_q = -child.GetQ(-1);
+        float cur_q = -child.GetQ(100);
         max_val = std::max(max_val,cur_q);
     }
-    q_ = max_val;
+    q_ = max_val < -2 ? q_ : max_val;
+    n_ += multivisit;
+    n_in_flight_ -= multivisit;
+    best_child_cached_ = nullptr;
 }
 void Node::FinalizeScoreUpdate(float v, float d, int multivisit) {
   // Recompute Q.

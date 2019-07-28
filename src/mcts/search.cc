@@ -1297,8 +1297,12 @@ void SearchWorker::DoBackupUpdateSingleNode(
       v = n->GetQ();
       d = n->GetD();
     }
-    n->FinalizeScoreUpdate(v, d, node_to_process.multivisit);
-    n->setMaxQ();
+    if(n != node){
+        n->setMaxQ(node_to_process.multivisit);
+    }
+    else{
+        n->FinalizeScoreUpdate(v, d, node_to_process.multivisit);
+    }
 
     // Convert parents to terminals except the root or those already converted.
     can_convert = can_convert && p != search_->root_node_ && !p->IsTerminal();
