@@ -414,17 +414,6 @@ void Search::MaybeTriggerStop() {
 }
 
 void Search::UpdateRemainingMoves() {
-
-    while(true){
-        int time = GetTimeSinceStart();
-        int nps = (total_playouts_ * 1000) / (time+1);
-    if(total_playouts_ > 5000 && nps > 5000){
-        std::this_thread::sleep_for(std::chrono::milliseconds(5));
-    }
-    else{
-        break;
-    }
-}
   if (params_.GetSmartPruningFactor() <= 0.0f) return;
   SharedMutex::Lock lock(nodes_mutex_);
   remaining_playouts_ = std::numeric_limits<int>::max();
@@ -755,28 +744,43 @@ Search::~Search() {
 //////////////////////////////////////////////////////////////////////////////
 // SearchWorker
 //////////////////////////////////////////////////////////////////////////////
-
+double search_pause = 0.0;
+//double avg_microsecs_overhead = 0.0;
 void SearchWorker::ExecuteOneIteration() {
-  // 1. Initialize internal structures.
-  InitializeIteration(search_->network_->NewComputation());
+  int64_t microsecs_spent = reporting::time_microseconds([&](){
+      // 1. Initialize internal structures.
+      InitializeIteration(search_->network_->NewComputation());
 
-  // 2. Gather minibatch.
-  GatherMinibatch();
+      // 2. Gather minibatch.
+      GatherMinibatch();
 
-  // 3. Prefetch into cache.
-  MaybePrefetchIntoCache();
+      // 3. Prefetch into cache.
+      MaybePrefetchIntoCache();
 
-  // 4. Run NN computation.
-  RunNNComputation();
+      // 4. Run NN computation.
+      RunNNComputation();
 
-  // 5. Retrieve NN computations (and terminal values) into nodes.
-  FetchMinibatchResults();
+      // 5. Retrieve NN computations (and terminal values) into nodes.
+      FetchMinibatchResults();
 
-  // 6. Propagate the new nodes' information to all their parents in the tree.
-  DoBackupUpdate();
+      // 6. Propagate the new nodes' information to all their parents in the tree.
+      DoBackupUpdate();
 
-  // 7. Update the Search's status and progress information.
-  UpdateCounters();
+      // 7. Update the Search's status and progress information.
+      UpdateCounters();
+  });
+  int64_t microsecs_slept = reporting::time_microseconds([&](){
+      SharedMutex::Lock lock(search_->nodes_mutex_);
+
+      double avg_depth = reporting::get_info().avg_depth;
+      const double goal_depth = 5.0;
+      search_pause += 0.03 * (goal_depth < avg_depth ? -1 : 1);
+      search_pause = std::max(search_pause,0.0);
+      int64_t microsecs_to_sleep = microsecs_spent * search_pause - 10;
+      if(microsecs_to_sleep > 0){
+          std::this_thread::sleep_for(std::chrono::microseconds(microsecs_to_sleep));
+      }
+  });
 }
 
 // 1. Initialize internal structures.

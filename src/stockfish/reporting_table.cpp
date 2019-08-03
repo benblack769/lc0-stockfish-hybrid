@@ -34,6 +34,7 @@ Value curbestval;
 CompareableMoveList current_pv;
 reporting::Parameters global_params;
 GlobalCollectionInfo cur_glob_info;
+double average_depth = 0;
 int curdepth = -1;
 
 static constexpr int MIN_SEARCH_DEPTH = 2;
@@ -106,6 +107,8 @@ public:
         if(entry.calced_search_depth != search_depth){
             throw runtime_error("didn't increment search_depth properly");
         }
+        const double mul_ratio = 0.001;
+        cur_glob_info.avg_depth = (1-mul_ratio)*cur_glob_info.avg_depth + mul_ratio*search_depth;
         entry.calced_search_depth = search_depth;
         if(!entry.is_calulating){
             throw runtime_error("finished without starting");

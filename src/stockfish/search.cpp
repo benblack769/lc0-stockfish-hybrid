@@ -1846,6 +1846,7 @@ string UCI::pv(const Position& pos, Depth depth, Value alpha, Value beta) {
       auto glob_entry = reporting::get_info();
       if(entry){
             ss << "otherinfo ";
+            ss << " avg_depth " << glob_entry.avg_depth;
             ss << " guided_choices " << glob_entry.guided_choices;
             ss << " choices " << (glob_entry.not_guided_choices+glob_entry.guided_choices);
             ss << " rootdepth " << entry.value().search_depth;

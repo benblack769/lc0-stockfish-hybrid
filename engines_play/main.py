@@ -27,8 +27,8 @@ import multiprocessing
 import json
 import time
 
-starttime = 15*60*1000
-inctime = 10*1000
+starttime = 10*60*1000
+inctime = 5*1000
 
 def get_bestmove(file,outfile):
     num_lines_split = 0
@@ -128,6 +128,13 @@ class Engine:
         bestmove = get_bestmove(self.read_pipe,self.stdoutfile)
         return bestmove
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self):
+        self.close()
+        return
+
     def close(self):
         self.process.terminate()
         time.sleep(1.0)
@@ -184,6 +191,14 @@ def process_game(eng1,eng2,game_idx):
     sb = starttime
     iw = inctime
     ib = inctime
+
+    mf = 2
+    if "fish" in eng1.name:
+        sw *= mf
+        iw *= mf
+    else:
+        sb *= mf
+        ib *= mf
 
     board = chess.Board()
     timer = Timer(sw,iw,sb,ib)

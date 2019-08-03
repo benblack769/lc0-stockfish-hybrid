@@ -51,6 +51,7 @@ struct ABTableEntry{
 struct GlobalCollectionInfo{
     int guided_choices=0;
     int not_guided_choices=0;
+    double avg_depth=10;
     bool found_mate = false;
 };
 
