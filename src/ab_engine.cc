@@ -8,6 +8,7 @@
 #include <mutex>
 #include <thread>
 #include "ab_engine.h"
+#include "stockfish/reporting_table.h"
 
 
 #define r_assert(val) { \
@@ -31,6 +32,7 @@ void start_engine(){
     r_assert(!is_started);
 
     spawn_sf_main_thread();
+    reporting::clear();
 
     is_started = true;
     line_lock.unlock();

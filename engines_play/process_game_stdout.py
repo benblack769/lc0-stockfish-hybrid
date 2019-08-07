@@ -16,6 +16,7 @@ class InfoCollector:
         self.allowed_move_dict = None
         self.rootmoves = None
         self.rootmovesdepth = None
+        self.rootoptions = None
         self.time_move = None
         self.depth = None
         self.nps = None

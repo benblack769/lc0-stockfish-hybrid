@@ -79,6 +79,7 @@ struct Parameters{
     int min_ab_depth_valid;
 };
 void clear();
+void remove_old_nodes();
 //bool should_set_entry(Key key, int depth,int search_depth,Value val);
 void set_ab_entry(CompareablePosition position,CompareableMoveList moves,int search_depth, int64_t microseconds_spent);
 void set_mcts_entry(CompareablePosition position, CompareableMoveList moves_to_pos, int nodes_searched);

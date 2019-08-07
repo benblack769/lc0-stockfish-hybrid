@@ -778,7 +778,7 @@ void SearchWorker::ExecuteOneIteration() {
       search_pause = std::max(search_pause,0.0);
       int64_t microsecs_to_sleep = microsecs_spent * search_pause - 10;
       if(microsecs_to_sleep > 0){
-          std::this_thread::sleep_for(std::chrono::microseconds(microsecs_to_sleep));
+          //std::this_thread::sleep_for(std::chrono::microseconds(microsecs_to_sleep));
       }
   });
 }
@@ -966,7 +966,11 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
     CompareablePosition comp_pos = history_.Last().CompPos();
     lczero::optional<ABTableEntry> movelist = reporting::get_ab_entry(comp_pos);
     bool flipped = history_.Last().IsBlackToMove();
-    reporting::set_path_chosen(bool(movelist) && movelist.value().search_depth >= 5);
+    bool should_use_sf = movelist
+            && movelist.value().moves.size()
+            && movelist.value().search_depth >= sf_min_depth
+            && movelist.value().moves.size() < 4;
+    reporting::set_path_chosen(should_use_sf);
 
     for (auto child : node->Edges()) {
       if (is_root_node) {
@@ -990,9 +994,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
 
       //if ab searching does not report this move as promising, don't search it
       CompareableMove comp_move(child.GetMove(flipped).as_string());
-      if(movelist
-              && movelist.value().moves.size()
-              && movelist.value().search_depth >= sf_min_depth
+      if(should_use_sf
               && !contains(movelist.value().moves,comp_move)){
          continue;
      }

@@ -27,17 +27,23 @@ import multiprocessing
 import json
 import time
 
-starttime = 1*60*1000
-inctime = int(0.5*1000)
+starttime = 3*60*1000
+inctime = int(1*1000)
 
 def get_bestmove(file,outfile):
     num_lines_split = 0
+    bad_line_count = 0
     while True:
         line = file.readline().decode()
         #print(line)
         outfile.write(line)
         if not line:
-            raise RuntimeError("werid output from engine")
+            bad_line_count += 1
+            if bad_line_count > 10:
+                raise RuntimeError("werid output from engine")
+            continue
+
+        bad_line_count = 0
 
         if "bestmove" in line:
             bestmove_start = line.index("bestmove")
@@ -137,9 +143,9 @@ class Engine:
 
     def close(self):
         self.process.terminate()
-        time.sleep(1.0)
+        time.sleep(0.1)
         self.process.kill()
-        time.sleep(20.0)
+        #time.sleep(20.0)
 
         self.stdoutfile.close()
 
