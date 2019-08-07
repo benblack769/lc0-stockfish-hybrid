@@ -40,6 +40,7 @@ class InfoCollector:
     def set_info(self,uci_line):
         if "otherinfo" in uci_line:
             self.rootmovesdepth = (get_value_by_name(uci_line,"rootdepth"))
+            self.rootoptions = (get_value_by_name(uci_line,"rootoptions"))
         elif "short_info" in  uci_line:
             #nothing of use in this string
             pass
