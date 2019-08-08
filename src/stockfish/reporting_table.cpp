@@ -71,7 +71,8 @@ struct TimeRatioItem{
 };
 double calc_comparitor(TableEntry & entry){
     int moves = std::max(size_t(1),entry.get_moves().size());
-    return entry.nodes_searched / (1.0+entry.ab_time * moves);
+    int import_moves = moves <= 3 ? 1 : moves;
+    return entry.nodes_searched / (1.0+entry.ab_time * import_moves);
 }
 void tr_swap(TimeRatioItem & i1, TimeRatioItem & i2){
     swap(i1.hash_ptr->second.item_location,i2.hash_ptr->second.item_location);

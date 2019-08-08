@@ -969,7 +969,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
     bool should_use_sf = movelist
             && movelist.value().moves.size()
             && movelist.value().search_depth >= sf_min_depth
-            && movelist.value().moves.size() < 4;
+            ;//&& movelist.value().moves.size() < 4;
     reporting::set_path_chosen(should_use_sf);
 
     for (auto child : node->Edges()) {

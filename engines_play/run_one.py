@@ -27,8 +27,8 @@ import multiprocessing
 import json
 import time
 
-starttime = 3*60*1000
-inctime = int(1*1000)
+starttime = 10*60*1000
+inctime = int(5*1000)
 
 def get_bestmove(file,outfile):
     num_lines_split = 0

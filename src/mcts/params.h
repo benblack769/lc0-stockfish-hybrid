@@ -133,6 +133,7 @@ class SearchParams {
   static const OptionId kKLDGainAverageInterval;
   static const OptionId kStockfishMoverTolerance;
   static const OptionId kMinABDepthValid;
+  static const OptionId kStockfishLMR_adj;
   static const OptionId kStockfishOpponentTolerance;
 
  private:

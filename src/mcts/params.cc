@@ -199,6 +199,10 @@ const OptionId SearchParams::kMinABDepthValid{
     "min-ab-depth-valid", "MinABDepthValid",
     "How deep stockfish eval needs to get before the MCTS algorithm starts  "
     "eliminating the move Stockfish recomends to remove."};
+const OptionId SearchParams::kStockfishLMR_adj{
+    "stockfish-lmr-val", "StockfishLMR_adj",
+    "Values lower than 1 make stockfish search wider than usual rather than deeper  "
+    "higher values search deeper rather than wider."};
 
 void SearchParams::Populate(OptionsParser* options) {
   // Here the uci optimized defaults" are set.
@@ -244,6 +248,7 @@ void SearchParams::Populate(OptionsParser* options) {
   options->Add<IntOption>(kStockfishMoverTolerance, 1, 400) = 60;
   options->Add<IntOption>(kStockfishOpponentTolerance, 1, 400) = 35;
   options->Add<IntOption>(kMinABDepthValid, 1, 40) = 5;
+  options->Add<FloatOption>(kStockfishLMR_adj, 0.001, 100) = 0.5;
 
   options->HideOption(kLogLiveStatsId);
 }
@@ -280,7 +285,8 @@ SearchParams::SearchParams(const OptionsDict& options)
             reporting::Parameters params = {
                 options.Get<int>(kStockfishMoverTolerance.GetId()),
                 options.Get<int>(kStockfishOpponentTolerance.GetId()),
-                options.Get<int>(kMinABDepthValid.GetId())
+                options.Get<int>(kMinABDepthValid.GetId()),
+                options.Get<float>(kStockfishLMR_adj.GetId())
             };
             reporting::set_parameters(params);
       }

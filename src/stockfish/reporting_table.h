@@ -77,6 +77,7 @@ struct Parameters{
     int stockfish_mover_tolerance;
     int stockfish_opponent_tolerance;
     int min_ab_depth_valid;
+    float stockfish_lmr_val;
 };
 void clear();
 void remove_old_nodes();

@@ -163,12 +163,13 @@ void set_pv_bestmoves(Position & pos,std::vector<Move>,int depth);
 /// Search::init() is called at startup to initialize various lookup tables
 
 void Search::init() {
+  float param_adj = reporting::get_parameters().stockfish_lmr_val;
 
   for (int imp = 0; imp <= 1; ++imp)
       for (int d = 1; d < 64; ++d)
           for (int mc = 1; mc < 64; ++mc)
           {
-              double r = log(d) * log(mc) / 1.95;
+              double r = param_adj*(log(d) * log(mc) / 1.95);
 
               Reductions[NonPV][imp][d][mc] = int(std::round(r));
               Reductions[PV][imp][d][mc] = std::max(Reductions[NonPV][imp][d][mc] - 1, 0);
