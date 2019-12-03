@@ -10,7 +10,7 @@ There are detailed build instructions in [INSTALL.md](INSTALL.md). If you need w
 
 Both the Lc0 chess engine and the stockfish engine are extremely strong, and have been dramatically improving due to improved heuristics for stockfish, and improved training for Lc0. However, they are very different engines, based off very different methods and strengths, and so the goal is to combine those strengths.
 
-![hybrid_image](/images/chess_engines/stockfish_lc0_hybrid.png)
+![hybrid_image](diagrams/stockfish_lc0_hybrid.png)
 
 ### Comparable strengths and weaknesses
 
