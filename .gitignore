@@ -8,3 +8,4 @@ subprojects/*
 !subprojects/*.wrap
 lc0.xcodeproj/
 *.swp
+lc0-sf-diagram

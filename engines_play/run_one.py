@@ -7,7 +7,7 @@ Requires 2 command line arguments, the paths to json files describing the engine
 Example json file is:
 
 {
-    "engine_path": "/home/benblack/fun_projs/lc0/build/release/lc0",
+    "engine_path": "/home/ben/fun_projs/lc0/build/release/lc0",
     "options": [
         "setoption name Hash value 6500",
         "setoption name Threads value 8"
@@ -27,8 +27,8 @@ import multiprocessing
 import json
 import time
 
-starttime = 10*60*1000
-inctime = int(5*1000)
+#starttime = 10*60*1000
+#inctime = int(5*1000)
 
 def get_bestmove(file,outfile):
     num_lines_split = 0
@@ -118,7 +118,7 @@ class Engine:
         self.write_pipe = write_pipe
         for option in engine_info['options']:
             self.write_pipe.write((option+"\n").encode())
-        stdoutfname = "games/"+str(game_idx)+self.name + ".txt"
+        stdoutfname = ""+str(game_idx)+self.name + ".txt"
         self.stdoutfile = open(stdoutfname,'a')
 
     def make_move(self,movelist,timer):
@@ -167,7 +167,7 @@ def board_to_pgn(e1,e2,board,result,write_file,write_idx):
         game.headers[k] = v
 
     print(game,file=write_file,flush=True)
-    write_filename = "games/{}".format(write_idx)
+    write_filename = "{}".format(write_idx)
     #subprocess.check_call("aws s3 cp {} s3://script-wars-deploy/chess_games/{}".format(write_filename,write_idx),shell=True)
     #write_file.write(repr(game))
     #return
@@ -226,7 +226,7 @@ def process_game(eng1,eng2,game_idx):
             except (subprocess.CalledProcessError,RuntimeError,ValueError) as err:
                 cur_eng.close()
                 cur_eng = create_engine(cur_eng.info,game_idx)
-                with open("games/{}crash_log".format(game_idx),'a') as crash_log:
+                with open("{}crash_log".format(game_idx),'a') as crash_log:
                     crash_log.write("ERROR in {}:\n{}\n\n".format(cur_eng.name,str(err)))
 
         timer.update_time(white_turn,duration)
@@ -259,17 +259,16 @@ def run_game(e1info,e2info,outfilename,idx):
     eng2.close()
 
 
-def main():
-    assert len(sys.argv) == 4, "needs 3 command line arguments, the index of the game and the names of the two engines"
+if __name__ == "__main__":
+    assert len(sys.argv) == 6, "needs 3 command line arguments, the index of the game and the names of the two engines and the start and increment time"
 
     game_idx = int(sys.argv[1])
     eng1_name = sys.argv[2]
     eng2_name = sys.argv[3]
+    starttime = int(sys.argv[4])
+    inctime = int(sys.argv[5])
 
     eng1_info = json.load(open(eng1_name))
     eng2_info = json.load(open(eng2_name))
 
-    run_game(eng1_info, eng2_info, "games/{}".format(game_idx),game_idx)
-
-if __name__ == "__main__":
-    main()
+    run_game(eng1_info, eng2_info, "{}".format(game_idx),game_idx)

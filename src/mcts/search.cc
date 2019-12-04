@@ -994,13 +994,14 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
 
       //if ab searching does not report this move as promising, don't search it
       CompareableMove comp_move(child.GetMove(flipped).as_string());
+      float adj = 0;
       if(should_use_sf
               && !contains(movelist.value().moves,comp_move)){
-         continue;
+         continue;//adj = -0.2;
      }
 
       const float Q = child.GetQ(fpu);
-      const float score = child.GetU(puct_mult) + Q;
+      const float score = child.GetU(puct_mult) + Q + adj;
       if (score > best) {
         second_best = best;
         second_best_edge = best_edge;
