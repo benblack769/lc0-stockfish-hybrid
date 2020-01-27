@@ -57,7 +57,7 @@ def run_many(engine1_name,engine2_name,folder,times,timeout):
 
 
 if __name__ == "__main__":
-    assert len(sys.argv) == 7, "needs 3 command line arguments, the output folder and the names of the two engines "
+    assert len(sys.argv) == 7, "needs 6 command line arguments, the output folder and the names of the two engines, starttime, inctime, timeoutmax "
 
     outfold_name = sys.argv[1]
     eng1_name = sys.argv[2]
@@ -69,4 +69,4 @@ if __name__ == "__main__":
     eng1_name = eng1_name
     eng2_name = eng2_name
 
-    run_many(eng1_name,eng2_name,outfold_name,100,timeout_max)
+    run_many(eng1_name,eng2_name,outfold_name,50,timeout_max)
