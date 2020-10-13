@@ -95,6 +95,9 @@ class Edge {
   // (but can be changed by adding Dirichlet noise). Must be in [0,1].
   float GetP() const;
   void SetP(float val);
+  // Store RENTS policy instead of recalculating it.
+  float GetPolicy() const { return policy_; }
+  void SetPolicy(float val) { policy_ = val; }
 
   /* float GetRBetamcts() const { return r_betamcts_; } */
   /* betamcts::relevance should be edge property.
@@ -114,6 +117,7 @@ class Edge {
   // Probability that this move will be made, from the policy head of the neural
   // network; compressed to a 16 bit format (5 bits exp, 11 bits significand).
   uint16_t p_ = 0;
+  float policy_ = 0;
 
   // float r_betamcts_ = 1.0f;
   /* Moved to Node for memory reasons. */
@@ -196,6 +200,8 @@ class Node {
   void SetRBetamcts(float val) {
     r_betamcts_ = std::max(0.0f,val);
   }
+  // Calculate policy for all children.
+  void SetPoliciesRENTS(float temp, float fpu);
   // Returns whether the node is known to be draw/lose/win.
   bool IsTerminal() const { return terminal_type_ != Terminal::NonTerminal; }
   bool IsTbTerminal() const { return terminal_type_ == Terminal::Tablebase; }
@@ -484,7 +490,7 @@ class EdgeAndNode {
     return (node_ && node_->GetN() > 0) ?
             node_->GetLCBBetamcts(trust, prior, percentile) : -1.0;
   };
-
+  float GetPolicy() const { return edge_->GetPolicy(); }
   // Returns U = numerator * p / N.
   // Passed numerator is expected to be equal to (cpuct * sqrt(N[parent])).
   float GetU(float numerator, float april_factor, float april_factor_parent,

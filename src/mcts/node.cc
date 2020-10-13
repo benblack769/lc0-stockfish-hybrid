@@ -28,6 +28,7 @@
 #include "mcts/node.h"
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cmath>
 #include <cstring>
@@ -421,6 +422,25 @@ float Node::GetLCBBetamcts(float trust, float prior, float percentile) {
                     FastPow((1.0 - percentile) / percentile,
                             std::sqrt(2.0 * logit_var)))
             : -1.0f) : 1.0f;
+}
+
+// Calculate the RENTS policies for all children.
+void Node::SetPoliciesRENTS(float temp, float fpu) {
+
+  std::array<float, 256> intermediate;
+  int counter = 0;
+  float total = 0.0;
+  for (auto edge : Edges()) {
+    float val = FastExp(edge.GetQBetamcts(fpu) / temp);
+    intermediate[counter++] = val;
+    total += val;
+  }
+  counter = 0;
+  // Normalize policy values to add up to 1.0.
+  const float scale = total > 0.0f ? 1.0f / total : 1.0f;
+  for (auto edge : Edges()) {
+    edge.edge()->SetPolicy(intermediate[counter++] * scale);
+  }
 }
 
 

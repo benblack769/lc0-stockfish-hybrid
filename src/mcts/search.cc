@@ -232,7 +232,7 @@ void Search::SendUciInfo() REQUIRES(nodes_mutex_) {
     const auto d = edge.GetD(default_d);
     const int w = static_cast<int>(std::round(500.0 * (1.0 + wl - d)));
     const auto q = edge.GetQ(default_q, draw_score,
-                             params_.GetBetamctsLevel() >= 1);
+                    params_.GetBetamctsLevel() >= 1);
     if (edge.IsTerminal() && wl != 0.0f) {
       uci_info.mate = std::copysign(
           std::round(edge.GetM(0.0f)) / 2 + (edge.IsTbTerminal() ? 101 : 1),
@@ -1269,6 +1269,8 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
 
     m_evaluator.SetParent(node);
     bool can_exit = false;
+    const float rand_value = Random::Get().GetFloat(1.0);
+    float cum_policy = 0.0;
     for (auto child : node->Edges()) {
       if (is_root_node) {
         // If there's no chance to catch up to the current best node with
@@ -1288,34 +1290,47 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
           continue;
         }
       }
-
-      const float Q = child.GetQ(fpu, draw_score,
-                                 params_.GetBetamctsLevel() >= 2);
-      const float M = m_evaluator.GetM(child, Q);
-
-      const float score = child.GetU(puct_mult, params_.GetAprilFactor(),
-                              params_.GetAprilFactorParent()) + Q + M;
-
-      if (score > best) {
-        second_best = best;
-        second_best_edge = best_edge;
-        best = score;
-        best_without_u = Q + M;
+      // Use RENTS only for nodes with more than 100 visits.
+      if (params_.GetUseRENTS() && (node->GetN() > 100)) {
+        const float lambda = std::min(1.0f, params_.GetRENTSExplorationFactor()
+                                            / FastLog(node->GetN() + 1.0f));
+        const float child_policy =
+            child.GetPolicy() * (1 - lambda) + lambda * child.GetP();
         best_edge = child;
-      } else if (score > second_best) {
-        second_best = score;
-        second_best_edge = child;
-      }
-      if (can_exit) break;
-      if (child.GetNStarted() == 0) {
-        // One more loop will get 2 unvisited nodes, which is sufficient to
-        // ensure second best is correct. This relies upon the fact that edges
-        // are sorted in policy decreasing order.
-        can_exit = true;
+        if (cum_policy + child_policy > rand_value) {
+          // Found the chosen move, break here
+          break;
+        } else {
+          cum_policy += child_policy;
+        }
+      } else {
+        const float Q = child.GetQ(fpu, draw_score,
+                                   params_.GetBetamctsLevel() >= 2);
+        const float M = m_evaluator.GetM(child, Q);
+        const float score = child.GetU(puct_mult, params_.GetAprilFactor(),
+                                  params_.GetAprilFactorParent()) + Q + M;
+
+        if (score > best) {
+          second_best = best;
+          second_best_edge = best_edge;
+          best = score;
+          best_without_u = Q + M;
+          best_edge = child;
+        } else if (score > second_best) {
+          second_best = score;
+          second_best_edge = child;
+        }
+        if (can_exit) break;
+        if (child.GetNStarted() == 0) {
+          // One more loop will get 2 unvisited nodes, which is sufficient to
+          // ensure second best is correct. This relies upon the fact that edges
+          // are sorted in policy decreasing order.
+          can_exit = true;
+        }
       }
     }
 
-    if (second_best_edge) {
+    if (!params_.GetUseRENTS() && second_best_edge) {
       int estimated_visits_to_change_best =
           best_edge.GetVisitsToReachU(second_best, puct_mult, best_without_u,
            params_.GetBetamctsLevel() >= 3, params_.GetAprilFactor(), params_.GetAprilFactorParent());
@@ -1672,7 +1687,9 @@ void SearchWorker::FetchSingleNodeResult(NodeToProcess* node_to_process,
   // Normalize P values to add up to 1.0.
   const float scale = total > 0.0f ? 1.0f / total : 1.0f;
   for (auto edge : node->Edges()) {
-    edge.edge()->SetP(intermediate[counter++] * scale);
+    const float p = intermediate[counter++] * scale;
+    edge.edge()->SetPolicy(p);
+    edge.edge()->SetP(p);
   }
   // Add Dirichlet noise if enabled and at root.
   if (params_.GetNoiseEpsilon() && node == search_->root_node_) {
@@ -1744,6 +1761,10 @@ void SearchWorker::DoBackupUpdateSingleNode(
       if (std::abs(q_new - q_init) > 0.001) {
         n->StabilizeScoreBetamcts(params_.GetBetamctsTrust(),
               params_.GetBetamctsPrior(), 5, 0.001);
+      }
+      if (params_.GetUseRENTS()) {
+        const float fpu = GetFpu(params_, node, false, 0.0f);
+        n->SetPoliciesRENTS(params_.GetRENTSTemp(), fpu);
       }
     } else {
       n->FinalizeScoreUpdate(v, d, m, node_to_process.multivisit,
