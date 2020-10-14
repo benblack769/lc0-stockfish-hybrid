@@ -1767,7 +1767,7 @@ void SearchWorker::DoBackupUpdateSingleNode(
       if (params_.GetUseRENTS()) {
         const float fpu = GetFpu(params_, node, false, 0.0f);
         const float lambda = std::min(1.0f, params_.GetRENTSExplorationFactor()
-                                            / FastLog((float)node->GetN() + 1.0f));
+                                            / FastLog((float)n->GetN() + 1.0f));
         n->SetPoliciesRENTS(params_.GetRENTSTemp(), lambda, fpu);
       }
     } else {

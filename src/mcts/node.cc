@@ -450,6 +450,7 @@ void Node::SetPoliciesRENTS(float temp, float lambda, float fpu) {
   // Normalize policy values to add up to 1.0.
   const float scale = total > 0.0f ? 1.0f / total : 1.0f;
   const float scale_p = policy_total > 0.0f ? 1.0f / policy_total : 1.0f;
+  if (policy_total == 0.0) { lambda = 0; }
   for (auto edge : Edges()) {
     if (edge.GetP() > policy_threshold) {
       edge.edge()->SetPolicy(intermediate[counter++] * scale * (1 - lambda)
