@@ -1672,6 +1672,7 @@ void SearchWorker::FetchSingleNodeResult(NodeToProcess* node_to_process,
     max_p = std::max(max_p, p);
   }
   float total = 0.0;
+  float subtotal = 0.0;
   for (int i = 0; i < counter; i++) {
     // Perform softmax and take into account policy softmax temperature T.
     // Note that we want to calculate (exp(p-max_p))^(1/T) = exp((p-max_p)/T).
@@ -1679,14 +1680,15 @@ void SearchWorker::FetchSingleNodeResult(NodeToProcess* node_to_process,
         FastExp((intermediate[i] - max_p) / params_.GetPolicySoftmaxTemp());
     intermediate[i] = p;
     total += p;
+    if (p > 0.5) { subtotal += p; }
   }
   counter = 0;
   // Normalize P values to add up to 1.0.
   const float scale = total > 0.0f ? 1.0f / total : 1.0f;
   for (auto edge : node->Edges()) {
-    const float p = intermediate[counter++] * scale;
-    edge.edge()->SetPolicy(counter == 1 ? 1.0f : 0.0f);
-    edge.edge()->SetP(p);
+    const float p = intermediate[counter++];
+    edge.edge()->SetPolicy(p > 0.5 ? p / subtotal : 0.0f);
+    edge.edge()->SetP(p * scale);
   }
   // Add Dirichlet noise if enabled and at root.
   if (params_.GetNoiseEpsilon() && node == search_->root_node_) {

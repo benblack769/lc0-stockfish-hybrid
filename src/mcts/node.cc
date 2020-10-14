@@ -440,10 +440,10 @@ void Node::SetPoliciesRENTS(float temp, float lambda, float fpu) {
       intermediate[counter++] = val;
       total += val;
       policy_total += edge.GetP();
-    } else {
+    } // else {
       // As policies are ordered, all upcoming moves will fail as well.
-      break;
-    }
+      // break;
+    // }
   }
   counter = 0;
   // Normalize policy values to add up to 1.0.
