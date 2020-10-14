@@ -1291,11 +1291,8 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
         }
       }
       // Use RENTS only for nodes with more than 100 visits.
-      if (params_.GetUseRENTS() && (node->GetN() > 100)) {
-        const float lambda = std::min(1.0f, params_.GetRENTSExplorationFactor()
-                                            / FastLog(node->GetN() + 1.0f));
-        const float child_policy =
-            child.GetPolicy() * (1 - lambda) + lambda * child.GetP();
+      if (params_.GetUseRENTS() && (node->GetN() > 0)) {
+        const float child_policy = child.GetPolicy();
         best_edge = child;
         if (cum_policy + child_policy > rand_value) {
           // Found the chosen move, break here
@@ -1688,7 +1685,7 @@ void SearchWorker::FetchSingleNodeResult(NodeToProcess* node_to_process,
   const float scale = total > 0.0f ? 1.0f / total : 1.0f;
   for (auto edge : node->Edges()) {
     const float p = intermediate[counter++] * scale;
-    edge.edge()->SetPolicy(p);
+    edge.edge()->SetPolicy(counter == 1 ? 1.0f : 0.0f);
     edge.edge()->SetP(p);
   }
   // Add Dirichlet noise if enabled and at root.
@@ -1764,7 +1761,9 @@ void SearchWorker::DoBackupUpdateSingleNode(
       }
       if (params_.GetUseRENTS()) {
         const float fpu = GetFpu(params_, node, false, 0.0f);
-        n->SetPoliciesRENTS(params_.GetRENTSTemp(), fpu);
+        const float lambda = std::min(1.0f, params_.GetRENTSExplorationFactor()
+                                            / FastLog(node->GetN() + 1.0f));
+        n->SetPoliciesRENTS(params_.GetRENTSTemp(), lambda, fpu);
       }
     } else {
       n->FinalizeScoreUpdate(v, d, m, node_to_process.multivisit,
