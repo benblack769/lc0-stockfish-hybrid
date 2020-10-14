@@ -434,7 +434,7 @@ void Node::SetPoliciesRENTS(float temp, float lambda, float fpu) {
   float parent_q = -GetQBetamcts();
   // The first edge has the highest policy by design.
   for (auto edge : Edges()) {
-    if (counter == 0) { policy_threshold = edge.GetP() /
+    if (counter == 0) { policy_threshold = 0.5 * edge.GetP() /
                          std::sqrt((float)GetN() + 1.0f); }
     if (edge.GetP() > policy_threshold) {
       float val = FastExp((edge.GetQBetamcts(fpu) - parent_q) / temp);
