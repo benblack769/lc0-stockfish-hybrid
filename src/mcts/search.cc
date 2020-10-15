@@ -1683,14 +1683,14 @@ void SearchWorker::FetchSingleNodeResult(NodeToProcess* node_to_process,
         FastExp((intermediate[i] - max_p) / params_.GetPolicySoftmaxTemp());
     intermediate[i] = p;
     total += p;
-    if (p > 0.5) { subtotal += p; }
+    if (p > params_.GetPolicyCutoffFactor()) { subtotal += p; }
   }
   counter = 0;
   // Normalize P values to add up to 1.0.
   const float scale = total > 0.0f ? 1.0f / total : 1.0f;
   for (auto edge : node->Edges()) {
     const float p = intermediate[counter++];
-    edge.edge()->SetPolicy(p > 0.5 ? p / subtotal : 0.0f);
+    edge.edge()->SetPolicy(p > params_.GetPolicyCutoffFactor() ? p / subtotal : 0.0f);
     edge.edge()->SetP(p * scale);
   }
   // Add Dirichlet noise if enabled and at root.
@@ -1768,7 +1768,8 @@ void SearchWorker::DoBackupUpdateSingleNode(
         const float fpu = GetFpu(params_, node, false, 0.0f);
         const float lambda = std::min(1.0f, params_.GetRENTSExplorationFactor()
                                             / FastLog((float)n->GetN() + 1.0f));
-        n->SetPoliciesRENTS(params_.GetRENTSTemp(), lambda, fpu);
+        n->SetPoliciesRENTS(params_.GetRENTSTemp(), lambda,
+                            params_.GetPolicyCutoffFactor(), fpu);
       }
     } else {
       n->FinalizeScoreUpdate(v, d, m, node_to_process.multivisit,

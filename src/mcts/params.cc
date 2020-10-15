@@ -312,7 +312,11 @@ const OptionId SearchParams::kRENTSTempId{
 const OptionId SearchParams::kRENTSExplorationFactorId{
     "rents-exploration-factor", "RENTSExplorationFactor",
     "Controls the amount of uniform exploration which is mixed into the "
-    "policy. Larger values result in more exploration and flatter policies."
+    "policy. Larger values result in more exploration and flatter policies."};
+const OptionId SearchParams::kPolicyCutoffFactorId{
+    "policy-cutoff-factor", "PolicyCutoffFactor",
+    "When exploring small trees by Thompson sampling on policy only,"
+    "moves with policy ratio below factor/sqrt(N) aren't explored."
 };
 
 void SearchParams::Populate(OptionsParser* options) {
@@ -390,6 +394,7 @@ void SearchParams::Populate(OptionsParser* options) {
   options->Add<BoolOption>(kUseRENTSId) = false;
   options->Add<FloatOption>(kRENTSExplorationFactorId, 0.0f, 10.0f) = 2.0f;
   options->Add<FloatOption>(kRENTSTempId, 0.0001f, 10.0f) = 0.03f;
+  options->Add<FloatOption>(kPolicyCutoffFactorId, 0.0f, 1.0f) = 0.5f;
 
   options->HideOption(kNoiseEpsilonId);
   options->HideOption(kNoiseAlphaId);
@@ -466,7 +471,8 @@ SearchParams::SearchParams(const OptionsDict& options)
       kSolidTreeThreshold(options.Get<int>(kSolidTreeThresholdId)),
       kUseRENTS(options.Get<bool>(kUseRENTSId)),
 	  kRENTSExplorationFactor(options.Get<float>(kRENTSExplorationFactorId)),
-      kRENTSTemp(options.Get<float>(kRENTSTempId)) {
+      kRENTSTemp(options.Get<float>(kRENTSTempId)),
+      kPolicyCutoffFactor(options.Get<float>(kPolicyCutoffFactorId)) {
   if (std::max(std::abs(kDrawScoreSidetomove), std::abs(kDrawScoreOpponent)) +
           std::max(std::abs(kDrawScoreWhite), std::abs(kDrawScoreBlack)) >
       1.0f) {

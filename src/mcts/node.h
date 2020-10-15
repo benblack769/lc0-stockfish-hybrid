@@ -201,7 +201,7 @@ class Node {
     r_betamcts_ = std::max(0.0f,val);
   }
   // Calculate policy for all children.
-  void SetPoliciesRENTS(float temp, float lambda, float fpu);
+  void SetPoliciesRENTS(float temp, float lambda, float cutoff_factor, float fpu);
   // Returns whether the node is known to be draw/lose/win.
   bool IsTerminal() const { return terminal_type_ != Terminal::NonTerminal; }
   bool IsTbTerminal() const { return terminal_type_ == Terminal::Tablebase; }

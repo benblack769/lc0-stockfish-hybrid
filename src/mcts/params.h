@@ -121,6 +121,7 @@ class SearchParams {
   float GetRENTSTemp() const { return kRENTSTemp; }
   bool GetUseRENTS() const { return kUseRENTS; }
   float GetRENTSExplorationFactor() const { return kRENTSExplorationFactor; }
+  float GetPolicyCutoffFactor() const { return kPolicyCutoffFactor; }
 
   // Search parameter IDs.
   static const OptionId kMiniBatchSizeId;
@@ -184,6 +185,7 @@ class SearchParams {
   static const OptionId kRENTSTempId;
   static const OptionId kUseRENTSId;
   static const OptionId kRENTSExplorationFactorId;
+  static const OptionId kPolicyCutoffFactorId;
 
  private:
   const OptionsDict& options_;
@@ -239,6 +241,7 @@ class SearchParams {
   const float kRENTSTemp;
   const bool kUseRENTS;
   const float kRENTSExplorationFactor;
+  const float kPolicyCutoffFactor;
 };
 
 }  // namespace lczero

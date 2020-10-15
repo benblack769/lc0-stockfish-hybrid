@@ -425,7 +425,7 @@ float Node::GetLCBBetamcts(float trust, float prior, float percentile) {
 }
 
 // Calculate the RENTS policies for all children.
-void Node::SetPoliciesRENTS(float temp, float lambda, float fpu) {
+void Node::SetPoliciesRENTS(float temp, float lambda, float cutoff_factor, float fpu) {
   std::array<float, 256> intermediate;
   int counter = 0;
   float total = 0.0;
@@ -433,30 +433,31 @@ void Node::SetPoliciesRENTS(float temp, float lambda, float fpu) {
   float policy_threshold = 0.0;
   float parent_q = -GetQBetamcts();
   // The first edge has the highest policy by design.
+  // If the first edge is a proven loss, visit all children.
   for (auto edge : Edges()) {
-    if (counter == 0) { policy_threshold = 0.5 * edge.GetP() /
+    if (counter == 0) { policy_threshold = cutoff_factor * edge.GetP() /
                          std::sqrt((float)GetN() + 1.0f); }
     if (edge.GetP() > policy_threshold) {
       float val = FastExp((edge.GetQBetamcts(fpu) - parent_q) / temp);
       intermediate[counter++] = val;
       total += val;
       policy_total += edge.GetP();
-    } // else {
-      // As policies are ordered, all upcoming moves will fail as well.
-      // break;
-    // }
+    }
   }
+  const int n_children = counter;
   counter = 0;
   // Normalize policy values to add up to 1.0.
   const float scale = total > 0.0f ? 1.0f / total : 1.0f;
   const float scale_p = policy_total > 0.0f ? 1.0f / policy_total : 1.0f;
   if (policy_total == 0.0) { lambda = 0; }
+  float default_policy = (policy_total == 0) && (total == 0) ?
+                          1.0f / (float)n_children : 0.0f;
   for (auto edge : Edges()) {
     if (edge.GetP() > policy_threshold) {
       edge.edge()->SetPolicy(intermediate[counter++] * scale * (1 - lambda)
                              + edge.GetP() * scale_p * lambda);
     } else {
-      edge.edge()->SetPolicy(0.0f);
+      edge.edge()->SetPolicy(default_policy);
     }
   }
 }
