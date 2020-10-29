@@ -369,7 +369,7 @@ void Node::RecalculateScoreBetamcts() {
   float q_temp = 0.0f;
   // float q_temp = q_betamcts_; // evals of expanded nodes not kept
   float n_temp = 0.0f;
-  uint32_t n_vanilla = 0;
+  uint32_t n_vanilla = 1;
   for (const auto& child : Edges()) {
     n_vanilla += child.GetN();
     const auto n = child.GetNBetamcts();
@@ -385,7 +385,7 @@ void Node::RecalculateScoreBetamcts() {
     q_betamcts_ = q_temp / n_temp;
     n_betamcts_ = n_temp;
   }
-  if (n_vanilla > 0) n_ = n_vanilla + 1;
+  if (n_vanilla != n_) n_ = n_vanilla + 1;
 }
 
 void Node::StabilizeScoreBetamcts(const float trust, const float prior,
