@@ -205,8 +205,10 @@ Node* Node::CreateSingleChildNode(Move move) {
 void Node::CreateEdges(const MoveList& moves) {
   assert(!edges_);
   assert(!child_);
-  edges_ = Edge::FromMovelist(moves);
-  num_edges_ = moves.size();
+  if (!edges_) {
+    edges_ = Edge::FromMovelist(moves);
+    num_edges_ = moves.size();
+  }
 }
 
 Node::ConstIterator Node::Edges() const {
@@ -290,8 +292,13 @@ void Node::SortEdges() {
   assert(!child_);
   // Sorting on raw p_ is the same as sorting on GetP() as a side effect of
   // the encoding, and its noticeably faster.
-  std::sort(edges_.get(), (edges_.get() + num_edges_),
-            [](const Edge& a, const Edge& b) { return a.p_ > b.p_; });
+  // In analysis mode it is possible to expand a node without sending it
+  // to the NN first. In that case child_ already exists, and sorting edges_
+  // would lead to indices being wrong.
+  if (!child_) {
+    std::sort(edges_.get(), (edges_.get() + num_edges_),
+              [](const Edge& a, const Edge& b) { return a.p_ > b.p_; });
+  }
 }
 
 void Node::MakeTerminal(GameResult result, float plies_left, Terminal type,
@@ -775,6 +782,13 @@ std::string EdgeAndNode::DebugString() const {
 void NodeTree::MakeMove(Move move, bool analysis_mode) {
   if (HeadPosition().IsBlackToMove()) move.Mirror();
   const auto& board = HeadPosition().GetBoard();
+  auto legal_moves = board.GenerateLegalMoves();
+  // TODO: Check whether doing this all the time and not only in analysis mode
+  // slows anything down:
+  // if (!current_head_->Edges()) {
+  if (analysis_mode && !current_head_->Edges()) {
+    current_head_->CreateEdges(legal_moves);
+  }
 
   Node* new_head = nullptr;
   for (auto& n : current_head_->Edges()) {
