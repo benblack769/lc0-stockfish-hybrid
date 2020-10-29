@@ -1804,7 +1804,7 @@ void SearchWorker::DoBackupUpdateSingleNode(
     v_delta = -v_delta;
     m++;
     // Before switching to parent, save betamcts relevance of child.
-    r = n->GetRBetamcts();
+    r *= n->GetRBetamcts();
 
     // Update the stats.
     // Best move.
