@@ -385,7 +385,7 @@ void Node::RecalculateScoreBetamcts() {
     q_betamcts_ = q_temp / n_temp;
     n_betamcts_ = n_temp;
   }
-  if (n_vanilla != n_) n_ = n_vanilla + 1;
+  if (n_vanilla != n_) n_ = n_vanilla;
 }
 
 void Node::StabilizeScoreBetamcts(const float trust, const float prior,
