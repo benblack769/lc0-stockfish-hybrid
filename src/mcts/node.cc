@@ -385,7 +385,15 @@ void Node::RecalculateScoreBetamcts() {
     q_betamcts_ = q_temp / n_temp;
     n_betamcts_ = n_temp;
   }
-  if (n_vanilla != n_) n_ = n_vanilla;
+  if (n_vanilla != n_) {
+    n_ = n_vanilla;
+    // If we have to correct n_, visited policy might also be off.
+    float visited_policy = 0.0f;
+    for (const auto& child : Edges()) {
+      if (child.GetN() > 0) visited_policy += child.GetP();
+    }
+    visited_policy_ = visited_policy;
+  }
 }
 
 void Node::StabilizeScoreBetamcts(const float trust, const float prior,
