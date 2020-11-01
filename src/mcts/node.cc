@@ -384,7 +384,7 @@ void Node::RecalculateScoreBetamcts() {
   if (n_temp > 0) {
     q_betamcts_ = q_temp / n_temp;
     n_betamcts_ = n_temp;
-  } else {
+  } else if (n_vanilla > 0) {
     // Only explanation is that all children are terminal losses, so parent
     // node is a terminal win.
     // FIXME: Check thoroughly for terminal losses.
