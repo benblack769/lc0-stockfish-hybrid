@@ -369,8 +369,34 @@ void Node::RecalculateScoreBetamcts() {
   float q_temp = 0.0f;
   // float q_temp = q_betamcts_; // evals of expanded nodes not kept
   float n_temp = 0.0f;
+  float d_temp = 0.0f;
+  float m_temp = 0.0f;
+
   uint32_t n_vanilla = 1;
+
+  auto losing_m = 0.0f;
+  auto winning_m = 1000000.0f;
+  auto prefer_tb = false;
+  auto lower = GameResult::BLACK_WON;
+  auto upper = GameResult::BLACK_WON;
   for (const auto& child : Edges()) {
+    // Copy + paste code from SearchWorker::MaybeSetBounds().
+    // TODO: Ideally this would be done in one function.
+    const auto [edge_lower, edge_upper] = child.GetBounds();
+    lower = std::max(edge_lower, lower);
+    upper = std::max(edge_upper, upper);
+    // Checkmate is the best, so short-circuit.
+    const auto is_tb = child.IsTbTerminal();
+    if (edge_lower == GameResult::WHITE_WON && !is_tb) {
+      // Track the shortest win.
+      winning_m = std::min(winning_m, child.GetM(0.0f));
+    } else if (edge_upper == GameResult::BLACK_WON) {
+      // Track the longest loss.
+      losing_m = std::max(losing_m, child.GetM(0.0f));
+    }
+    prefer_tb = prefer_tb || is_tb;
+
+    // Now recalculate visits.
     n_vanilla += child.GetN();
     const auto n = child.GetNBetamcts();
     const auto r = child.GetRBetamcts();
@@ -379,19 +405,33 @@ void Node::RecalculateScoreBetamcts() {
       n_temp += visits_eff;
       // Flip Q for opponent.
       q_temp += -child.node()->GetQBetamcts() * visits_eff;
+      d_temp += child.GetD(0.0f) * visits_eff;
+      m_temp += child.GetM(0.0f) * visits_eff;
     }
   }
-  if (n_temp > 0) {
+  m_temp = (n_temp > 0 ? m_temp / n_temp : 0.0f);
+  // If we found a directly winning move, we don't need tablebases.
+  if (winning_m < 1000.0) { prefer_tb = false; }
+  // If we found a node which is supposed to be terminal, we make it terminal.
+  if (lower == upper) {
+    auto m = (upper == GameResult::BLACK_WON ? losing_m :
+              (upper == GameResult::WHITE_WON ? winning_m : m_temp)) + 1.0f;
+    MakeTerminal(-upper, m,
+        prefer_tb ? Node::Terminal::Tablebase : Node::Terminal::EndOfGame);
+  } else if (n_temp > 0) {
     q_betamcts_ = q_temp / n_temp;
     n_betamcts_ = n_temp;
-  } else if (n_vanilla > 0) {
-    // Only explanation is that all children are terminal losses, so parent
-    // node is a terminal win.
-    // FIXME: Check thoroughly for terminal losses.
+    d_ = d_temp / n_temp;
+    m_ = m_temp + 1.0f;
+  } else {
+    // While this should never happen at all, it could only happen if all child
+    // nodes are losses, so we assume a win without making the node terminal.
     q_betamcts_ = 1.0f;
-    n_betamcts_ = n_;
-    SetBounds(GameResult::WHITE_WON, GameResult::WHITE_WON);
+    n_betamcts_ = n_vanilla;
+    d_ = 0.0f;
+    // Don't change m_.
   }
+  // In AnalyseMode it's possible that we have to recalculate n_ as well.
   if (n_vanilla != n_) {
     n_ = n_vanilla;
     // If we have to correct n_, visited policy might also be off.
