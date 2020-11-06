@@ -1187,7 +1187,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
     }
     // If terminal, we either found a twofold draw to be reverted, or
     // reached the end of this playout.
-    if (node->IsTerminal()) {
+    if (!is_root_node && node->IsTerminal()) {
       // Probably best place to check for two-fold draws consistently.
       // Depth starts with 1 at root, so real depth is depth - 1.
       // Check whether first repetition was before root. If yes, remove
