@@ -413,7 +413,7 @@ void Node::RecalculateScoreBetamcts() {
   // If we found a directly winning move, we don't need tablebases.
   if (winning_m < 1000.0) { prefer_tb = false; }
   // If we found a node which is supposed to be terminal, we make it terminal.
-  if (lower == upper && n_vanilla > 0) {
+  if (lower == upper && n_vanilla > 1) {
     if (upper == GameResult::BLACK_WON) {
       auto m = losing_m + 1.0f;
       MakeTerminal(-upper, m,

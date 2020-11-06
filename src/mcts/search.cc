@@ -1210,7 +1210,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
           // Revert all visits on twofold draw when making it non terminal.
           node_to_revert->RevertTerminalVisits(wl, d, m + (float)depth_counter,
                                                terminal_visits);
-          if (params_.GetBetamctsLevel() >= 1) {
+          if (params_.GetBetamctsLevel() >= 1 && node_to_revert != node) {
             node_to_revert->StabilizeScoreBetamcts(params_.GetBetamctsTrust(),
                              params_.GetBetamctsPrior(), 5, 0.001);
           }
@@ -1218,6 +1218,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
           // Even if original tree still exists, we don't want to revert more
           // than until new root.
           if (depth_counter > depth - 1) break;
+          if (node_to_revert == search_->root_node_) break;
           // If wl != 0, we would have to switch signs at each depth.
         }
         // Mark the prior twofold draw as non terminal to extend it again.
