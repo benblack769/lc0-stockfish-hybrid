@@ -366,11 +366,11 @@ void Node::CalculateRelevanceBetamcts(const float trust, const float prior) {
 }
 
 void Node::RecalculateScoreBetamcts() {
-  float q_temp = 0.0f;
+  double q_temp = 0.0f;
   // float q_temp = q_betamcts_; // evals of expanded nodes not kept
-  float n_temp = 0.0f;
-  float d_temp = 0.0f;
-  float m_temp = 0.0f;
+  double n_temp = 0.0f;
+  double d_temp = 0.0f;
+  double m_temp = 0.0f;
 
   uint32_t n_vanilla = 1;
 
@@ -398,8 +398,8 @@ void Node::RecalculateScoreBetamcts() {
 
     // Now recalculate visits.
     n_vanilla += child.GetN();
-    const auto n = child.GetNBetamcts();
-    const auto r = child.GetRBetamcts();
+    const double n = child.GetNBetamcts();
+    const double r = child.GetRBetamcts();
     if (n > 0) {
       const auto visits_eff = r * n;
       n_temp += visits_eff;
