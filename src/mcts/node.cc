@@ -431,13 +431,14 @@ void Node::RecalculateScoreBetamcts() {
   } else {
     // While this should never happen at all, it could only happen if all child
     // nodes are losses, so we assume a win without making the node terminal.
-    q_betamcts_ = 1.0f;
+    // FIXME: Interacts badly with --betamcts-update-interval=1.
+    /* q_betamcts_ = 1.0f;
     n_betamcts_ = n_vanilla;
-    d_ = 0.0f;
+    d_ = 0.0f; */
     // Don't change m_.
   }
   // In AnalyseMode it's possible that we have to recalculate n_ as well.
-  if (n_vanilla != n_) {
+  if (n_vanilla != n_ && n_ > 0) {
     n_ = n_vanilla;
     // If we have to correct n_, visited policy might also be off.
     float visited_policy = 0.0f;
@@ -593,23 +594,16 @@ void Node::FinalizeScoreUpdate(float v, float d, float m, int multivisit,
     } else {
       n_betamcts_ += multivisit;
     }
-
-
-  } else {
-    if (edges_) {
-        if (full_betamcts_update) {
-          RecalculateScoreBetamcts();
-        } else {
-          q_betamcts_ += multivisit_eff * (v - q_betamcts_) / (n_ + multivisit_eff);
-          n_betamcts_ += multivisit_eff;
-        }
-      }
   }
 
   // Recompute Q.
   wl_ += multivisit * (v - wl_) / (n_ + multivisit);
   d_ += multivisit * (d - d_) / (n_ + multivisit);
   m_ += multivisit * (m - m_) / (n_ + multivisit);
+  // Recompute betamcts values.
+  q_betamcts_ += multivisit_eff * (v - q_betamcts_) / (n_ + multivisit_eff);
+  n_betamcts_ += multivisit_eff;
+
 
   // If first visit, update parent's sum of policies visited at least once.
   if (n_ == 0 && parent_ != nullptr) {
@@ -621,6 +615,10 @@ void Node::FinalizeScoreUpdate(float v, float d, float m, int multivisit,
   n_ += multivisit;
   // Decrement virtual loss.
   n_in_flight_ -= multivisit;
+  // Check for full betamcts recalculation.
+  if (full_betamcts_update && edges_) {
+    RecalculateScoreBetamcts();
+  }
   // Best child is potentially no longer valid.
   best_child_cached_ = nullptr;
 }
