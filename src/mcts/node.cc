@@ -539,7 +539,7 @@ void Node::MakeNotTerminal() {
   n_ = 0;
 
   // If we have edges, we've been extended (1 visit), so include children too.
-  if (edges_) { /* TODO betamcts::update q_betamcts_ here ? */
+  if (edges_) {
     n_++;
     for (const auto& child : Edges()) {
       const auto n = child.GetN();
@@ -555,6 +555,8 @@ void Node::MakeNotTerminal() {
     // Recompute with current eval (instead of network's) and children's eval.
     wl_ /= n_;
     d_ /= n_;
+    // If we make a node not terminal, recalculate it with betamcts.
+    RecalculateScoreBetamcts();
   }
 }
 
