@@ -438,7 +438,7 @@ void Node::RecalculateScoreBetamcts() {
     // Don't change m_.
   }
   // In AnalyseMode it's possible that we have to recalculate n_ as well.
-  if (n_vanilla != n_ && n_ > 0) {
+  if (n_vanilla != n_ && n_ > 0 && !IsTerminal()) {
     n_ = n_vanilla;
     // If we have to correct n_, visited policy might also be off.
     float visited_policy = 0.0f;
