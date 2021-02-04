@@ -15,30 +15,68 @@ Both the Lc0 chess engine and the stockfish engine are extremely strong, and hav
 ### Comparable strengths and weaknesses
 
 * In head to head matches, typically Lc0 wins reliably, but Stockfish is better at beating weaker engines (avoiding draws more successfully), so Stockfish still wins many engine tournaments.
-* On the hardware in these tournaments, stockfish evaluates around 60,000,000 nps, whereas Lc0 evaluates around 60,000. This is 3 orders of mangitude difference, yet they evaluate to a similar depth in most positions (around 35), indicating that stockfish sees a much wider tree, better evaluating more tactics positions, whereas Lc0 sees a deeper tree, evaluating deep endgames and positional weaknesses using its vastly superior heuristic.
+* On the hardware in these tournaments, Stockfish evaluates around 60,000,000 nps, whereas Lc0 evaluates around 60,000. This is 3 orders of magnitude difference, yet they evaluate to a similar depth in most positions (around 35), indicating that Stockfish sees a much wider tree, better evaluating more tactics positions, whereas Lc0 sees a deeper tree, evaluating deep endgames and positional weaknesses using its vastly superior heuristic.
 * Lc0 is not trained well for winning endgames. It can draw completely winning positions because it thinks every move is winning, including some that are not. In tournaments, a tablebase has to be used to mitigate this problem.
-* Stockfish is relatively bad at openings. Opening books are not allowed in tournaments, and stockfish's heuristic is not able to evaluate the complex middle game positions that openings produce.
+* Stockfish is relatively bad at openings. Opening books are not allowed in tournaments, and Stockfish's heuristic is not able to evaluate the complex middle game positions that openings produce.
 * Lc0 is relatively bad at tactics, dropping pieces in short time controls.
 
 So how to combine Stockfish's ability to win games and handle tactics with Lc0's ability to evaluate positions?
 
-The idea is to have Lc0 run its MCTS normally, but Stockfish will eliminate moves throughout the evaluating tree it thinks are especially bad. This should help Lc0 not fall for tactics even in deep into its search.
-
 ### Algorithm description
 
-The core position evaluation algorithm at the core of Lc0 only has one minor change:
+The core position evaluation algorithm is Lc0's Monte Carlo Tree Search (MCTS) Algorithm cloned from the AlphaZero paper. There is one change:
 
-*In selection, do not select moves that Stockfish has evaluated as bad.*
+*In MCTS selection, do not select moves that Stockfish has evaluated as bad.*
 
-Of course, there are all sorts of details about how much time the  Stockfish is allowed to evaluate each position, and at what point Stockfish is confident enough about its evaluation to start affecting the output, but most of those details aren't really important for the analysis. The main idea is that as a node gets evaluates more, Stockfish evaluates *all* of the children of that node more, allowing branches to be reevaluated by Stockfish if the parent looks good to Lc0, so even if a branch is defined as bad at one point does not mean it will always be evaluated that way, stabilizing the method significantly.
+This algorithm can be implemented much more efficiently than you would think. Contrary to appearances, Stockfish's core loop outputs a binary output. It does alpha-beta search where alpha and beta are the same number, so the only output of the core loop is whether the estimation evaluation is above or below alpha. To then compute the actual estimated value it reports, it does a binary search over candidate values. This central loop is extremely highly optimized, so using it directly is going to be extraordinarily efficient. This efficiency issue is a large part of the inspiration for the above algorithmic change.
+
+In order to implement the algorithm completely, there are several aspects to consider:
+
+1. What is a bad move?
+2. How deep does Stockfish search to determine if a move is good or bad?
+3. What does Lc0 do if Stockfish has not determined whether the move is good or bad yet?
+
+There is also a relevant design question: how does a seemingly crude binary criteria to explore edges in the tree produce high quality evaluations?
+
+#### What is a bad move?
+
+Moves that Stockfish thinks are bad are easy to characterize: A move is bad if it is 60 CP (centi pawns, a measure of material advantage) *worse* than Stockfish's evaluation of the root board position (this constant is a tunable hyperparameter).
+
+To implement this efficiently, there is one thread computing the value of the root position, and many other threads evaluating whether the moves all over the tree are "bad" under the above criteria (or both players).
+
+#### How deep does Stockfish search?
+
+Stockfish's evaluation loop uses an iterative algorithm which slowly increases the search depth of the engine. Inspired by this approach, the algorithm does the following:
+
+* All moves on all nodes that Lc0 explored at least once are evaluated to depth 3 (this is a tunable hyperparameter).
+* Evaluation upgrades are given priority based off the following formula:
+
+```
+priority = Node Weight / Computation Time
+```
+
+This formula is designed so that fast evaluations are prioritized and evaluations which Lc0 weights highly (meaning it has searched the node many times) are also prioritized. Computation time is estimated to be the computation time of previos searches of the move.
+
+####  What does Lc0 do if Stockfish has not determined whether the move is good or bad yet?
+
+This is simple, Lc0 assumes all moves are valid if Stockfish has not computed anything yet.
+
+#### Why does this algorithm produce stable, high quality evaluations despite a seemingly crude exploration criteria?
+
+One interesting feature of this algorithm is its builtin stability. If Stockfish rates a move as "bad" incorrectly, because of a shallow search depth, that does not prevent the *node* from being searched by Lc0, only the *move*. So if the *node* continues to be searched, the *move* which is weighted based off how often Lc0 explored the *node*, not the *move*, will continue to move up the priority queue until it is reevaluated by Stockfish at a greater depth.
+
+Many similar variations on the algorithm I tried failed miserably because it did not have this self-correcting feature.
+
 
 ### Visualizations for algorithm
 
+While it is hard to visualize a huge game tree, small parts of the game tree can be visualized to understand what the method actually does.
 
 The numbers at each nodes in the graph (and the thickness of the borders) represent how many times the node is visited in the MCTS simulation (the number of subnodes that are evaluated). The red lines are edges which Stockfish has decided are definitely bad, and which will no longer be explored (but their values are still included in the evaluations of parent nodes, for evaluation stability). Nodes with less than 5 children are pruned.
 <!--![A](/images/chess_engines/vis_graphs/hundred/nosf_middle.svg)
 ![A](/images/chess_engines/vis_graphs/hundred/sf_middle.svg)
 -->
+
 
 #### Tactical positions
 
