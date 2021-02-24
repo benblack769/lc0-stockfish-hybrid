@@ -842,14 +842,14 @@ std::string EdgeAndNode::DebugString() const {
 // NodeTree
 /////////////////////////////////////////////////////////////////////////
 
-void NodeTree::MakeMove(Move move, bool analyse_mode) {
+void NodeTree::MakeMove(Move move, bool keep_siblings) {
   if (HeadPosition().IsBlackToMove()) move.Mirror();
   const auto& board = HeadPosition().GetBoard();
   auto legal_moves = board.GenerateLegalMoves();
   // TODO: Check whether doing this all the time and not only in analyse mode
   // slows anything down:
   // if (!current_head_->Edges()) {
-  if (analyse_mode && !current_head_->Edges()) {
+  if (keep_siblings && !current_head_->Edges()) {
     current_head_->CreateEdges(legal_moves);
   }
 
@@ -864,7 +864,7 @@ void NodeTree::MakeMove(Move move, bool analyse_mode) {
     }
   }
   move = board.GetModernMove(move);
-  if (!analyse_mode) {
+  if (!keep_siblings) {
     current_head_->ReleaseChildrenExceptOne(new_head);
     new_head = current_head_->child_.get();
   }
@@ -885,7 +885,8 @@ void NodeTree::TrimTreeAtHead() {
 
 bool NodeTree::ResetToPosition(const std::string& starting_fen,
                                const std::vector<Move>& moves,
-                               const bool analyse_mode) {
+                               const bool analyse_mode,
+                               const bool free_memory) {
   ChessBoard starting_board;
   int no_capture_ply;
   int full_moves;
@@ -907,11 +908,12 @@ bool NodeTree::ResetToPosition(const std::string& starting_fen,
   Node* old_head = current_head_;
   current_head_ = gamebegin_node_.get();
   bool seen_old_head = (gamebegin_node_.get() == old_head);
+  bool keep_siblings = (analyse_mode && !free_memory);
   for (const auto& move : moves) {
-    MakeMove(move, analyse_mode);
+    MakeMove(move, keep_siblings);
     if (old_head == current_head_) seen_old_head = true;
   }
-  // Unless we are explicitly in analysie mode, we want to be conservative
+  // Unless we are explicitly in AnalyseMode, we want to be conservative
   // with keeping the old tree around because of possible inconsistencies.
   // MakeMove guarantees that no siblings exist; but, if we didn't see the old
   // head, it means we might have a position that was an ancestor to a
