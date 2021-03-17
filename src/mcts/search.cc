@@ -1768,7 +1768,7 @@ void SearchWorker::DoBackupUpdateSingleNode(
         n->StabilizeScoreBetamcts(params_.GetBetamctsTrust(),
               params_.GetBetamctsPrior(), 5, 0.001);
       }
-      if (params.GetUseBetaTS()) {
+      if (params_.GetUseBetaTS()) {
         n->SetPoliciesBetaTS(params_.GetPolicyCutoffFactor());
       } else if (params_.GetUseRENTS()) {
         const float fpu = GetFpu(params_, node, false, 0.0f);
