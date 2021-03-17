@@ -395,7 +395,7 @@ std::vector<std::string> Search::GetVerboseStats(Node* node) const {
     print(oss, "N: ", n, " ", 7);
     print(oss, "(+", f, ") ", 2);
     print(oss, "(P: ", p * 100, "%) ", 5, p >= 0.99995f ? 1 : 2);
-    if (params_.GetUseRENTS()) {
+    if (params_.GetUseBetaTS() || params_.GetUseRENTS()) {
       print(oss, "(Pol: ", pol * 100, "%) ", 5, pol >= 0.99995f ? 1 : 2);
     }
   };
@@ -1297,7 +1297,8 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
         }
       }
       // Use RENTS only for nodes with more than 100 visits.
-      if (params_.GetUseRENTS() && (node->GetN() > 0)) {
+      // Use same loop for BetaTS.
+      if ((params_.GetUseBetaTS() || params_.GetUseRENTS()) && (node->GetN() > 0)) {
         const float child_policy = child.GetPolicy();
         best_edge = child;
         if (cum_policy + child_policy > rand_value) {
@@ -1333,7 +1334,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
       }
     }
 
-    if (!params_.GetUseRENTS() && second_best_edge) {
+    if (!params_.GetUseBetaTS() && !params_.GetUseRENTS() && second_best_edge) {
       int estimated_visits_to_change_best =
           best_edge.GetVisitsToReachU(second_best, puct_mult, best_without_u,
            params_.GetBetamctsLevel() >= 3, params_.GetAprilFactor(), params_.GetAprilFactorParent());
@@ -1767,7 +1768,9 @@ void SearchWorker::DoBackupUpdateSingleNode(
         n->StabilizeScoreBetamcts(params_.GetBetamctsTrust(),
               params_.GetBetamctsPrior(), 5, 0.001);
       }
-      if (params_.GetUseRENTS()) {
+      if (params.GetUseBetaTS()) {
+        n->SetPoliciesBetaTS(params_.GetPolicyCutoffFactor());
+      } else if (params_.GetUseRENTS()) {
         const float fpu = GetFpu(params_, node, false, 0.0f);
         const float lambda = std::min(1.0f, params_.GetRENTSExplorationFactor()
                                             / FastLog((float)n->GetN() + 1.0f));

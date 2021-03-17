@@ -201,6 +201,7 @@ class Node {
     r_betamcts_ = std::max(0.0f,val);
   }
   // Calculate policy for all children.
+  void SetPoliciesBetaTS(float cutoff_factor);
   void SetPoliciesRENTS(float temp, float lambda, float cutoff_factor, float fpu);
   // Returns whether the node is known to be draw/lose/win.
   bool IsTerminal() const { return terminal_type_ != Terminal::NonTerminal; }
@@ -483,7 +484,7 @@ class EdgeAndNode {
   Move GetMove(bool flip = false) const {
     return edge_ ? edge_->GetMove(flip) : Move();
   }
-  float GetRBetamcts() const { return node_ ? node_->GetRBetamcts() : 0; }
+  float GetRBetamcts() const { return node_ ? node_->GetRBetamcts() : 1.0f; }
   void SetRBetamcts(float value) const { if (node_) { node_->SetRBetamcts(value); } }
 
   float GetLCBBetamcts(float trust, float prior, float percentile) const {
