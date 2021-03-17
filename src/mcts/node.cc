@@ -520,12 +520,11 @@ void Node::SetPoliciesBetaTS(float cutoff_factor) {
   // Normalize policy values to add up to 1.0.
   const float scale = total > 0.0f ? 1.0f / total : 1.0f;
   const float scale_p = policy_total > 0.0f ? 1.0f / policy_total : 1.0f;
-  if (policy_total == 0.0) { lambda = 0; }
   float default_policy = (policy_total == 0) && (total == 0) ?
                           1.0f / (float)n_children : 0.0f;
   for (auto edge : Edges()) {
     if (edge.GetP() > policy_threshold) {
-      edge.edge()->SetPolicy(intermediate[counter++] * scale;
+      edge.edge()->SetPolicy(intermediate[counter++] * scale);
     } else {
       edge.edge()->SetPolicy(default_policy);
     }
