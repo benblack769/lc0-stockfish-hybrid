@@ -1769,7 +1769,8 @@ void SearchWorker::DoBackupUpdateSingleNode(
               params_.GetBetamctsPrior(), 5, 0.001);
       }
       if (params_.GetUseBetaTS()) {
-        n->SetPoliciesBetaTS(params_.GetPolicyCutoffFactor());
+        n->SetPoliciesBetaTS(params_.GetPolicyCutoffFactor(),
+            params_.GetAprilFactor(), params_.GetAprilFactorParent());
       } else if (params_.GetUseRENTS()) {
         const float fpu = GetFpu(params_, node, false, 0.0f);
         const float lambda = std::min(1.0f, params_.GetRENTSExplorationFactor()

@@ -496,7 +496,8 @@ float Node::GetLCBBetamcts(float trust, float prior, float percentile) {
 }
 
 // Calculate the BetaTS policies for all children.
-void Node::SetPoliciesBetaTS(float cutoff_factor) {
+void Node::SetPoliciesBetaTS(float cutoff_factor, float april_factor,
+                             float april_factor_parent) {
   std::array<float, 256> intermediate;
   int counter = 0;
   float total = 0.0;
@@ -509,10 +510,11 @@ void Node::SetPoliciesBetaTS(float cutoff_factor) {
     if (counter == 0) { policy_threshold = cutoff_factor * edge.GetP() /
                          std::sqrt((float)GetN() + 1.0f); }
     if (edge.GetP() > policy_threshold) {
-      float val = edge.GetP() * edge.GetRBetamcts();
+      float pol = edge.GetPApril(april_factor, april_factor_parent);
+      float val = pol * edge.GetRBetamcts();
       intermediate[counter++] = val;
       total += val;
-      policy_total += edge.GetP();
+      policy_total += pol;
     }
   }
   const int n_children = counter;
