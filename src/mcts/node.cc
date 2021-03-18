@@ -330,33 +330,33 @@ void Node::MakeTerminal(GameResult result, float plies_left, Terminal type,
 }
 
 void Node::CalculateRelevanceBetamcts(const float trust, const float prior) {
-  const auto winrate = (1.0f - GetQBetamcts())/2.0f;
-  const auto visits = GetNBetamcts() * trust + prior;
+  const double winrate = (1.0f - GetQBetamcts())/2.0f;
+  const double visits = GetNBetamcts() * trust + prior;
 
-  auto alpha = 1.0f + winrate * visits;
-  auto beta = 1.0f + (1.0f - winrate) * visits;
+  double alpha = 1.0f + winrate * visits;
+  double beta = 1.0f + (1.0f - winrate) * visits;
   // Experimenting with sharp parent eval
   /* auto logit_eval_parent = log((winrate + 0.00001) / (1.0 - winrate + 0.00001));
   auto logit_var_parent = 0.0f; */
   // Parent has uncertainty as well
-  auto logit_eval_parent = log(alpha / beta);
-  auto logit_var_parent = 1.0f / alpha + 1.0f / beta;
+  double logit_eval_parent = log(alpha / beta);
+  double logit_var_parent = 1.0f / alpha + 1.0f / beta;
 
   for (const auto& child : Edges()) {
     // betamcts::child Q values are flipped
     if (child.GetN() == 0) {continue;}
-    const auto winrate_child = (1.0f + child.node()->GetQBetamcts())/2.0f;
-    const auto visits_child = child.GetNBetamcts() * trust + prior;
+    const double winrate_child = (1.0f + child.node()->GetQBetamcts())/2.0f;
+    const double visits_child = child.GetNBetamcts() * trust + prior;
 
     if (visits == 0.0 && visits_child == 0.0) {
       child.SetRBetamcts(1.0);
     } else {
-      auto alpha_child = 1.0f + winrate_child * visits_child;
-      auto beta_child = 1.0f + (1.0f - winrate_child) * visits_child;
-      auto logit_eval_child = log(alpha_child / beta_child);
-      auto logit_var_child = 1.0f / alpha_child + 1.0f / beta_child;
+      double alpha_child = 1.0f + winrate_child * visits_child;
+      double beta_child = 1.0f + (1.0f - winrate_child) * visits_child;
+      double logit_eval_child = log(alpha_child / beta_child);
+      double logit_var_child = 1.0f / alpha_child + 1.0f / beta_child;
 
-      auto child_relevance = winrate_child == 0.0 ? 0.0 :
+      double child_relevance = winrate_child == 0.0 ? 0.0 :
             1.0f + FastErfLogistic( (logit_eval_child - logit_eval_parent)
             / sqrt(2.0 * (logit_var_child + logit_var_parent)));
 
