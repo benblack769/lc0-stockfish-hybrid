@@ -1307,6 +1307,25 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
         } else {
           cum_policy += child_policy;
         }
+      } else if (params_.GetUseBetaUCB()) {
+        const float scaling = std::sqrt(child.GetP()) * cpuct;
+        const float score = child.GetLCBBetamcts(params_.GetBetamctsTrust(),
+                                                 params_.GetBetamctsPrior(),
+                                                 1.0f - params_.GetBetamctsPercentile(),
+                                                 scaling);
+        // Copy + paste from regular PUCT calculation.
+        if (score > best) {
+          best = score;
+          best_edge = child;
+        }
+        if (can_exit) break;
+        if (child.GetNStarted() == 0) {
+          // One more loop will get 2 unvisited nodes, which is sufficient to
+          // ensure second best is correct. This relies upon the fact that edges
+          // are sorted in policy decreasing order.
+          can_exit = true;
+        }
+
       } else {
         const float Q = child.GetQ(fpu, draw_score,
                                    params_.GetBetamctsLevel() >= 2);
@@ -1334,7 +1353,8 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
       }
     }
 
-    if (!params_.GetUseBetaTS() && !params_.GetUseRENTS() && second_best_edge) {
+    if (!params_.GetUseBetaUCB() && !params_.GetUseBetaTS() &&
+        !params_.GetUseRENTS() && second_best_edge) {
       int estimated_visits_to_change_best =
           best_edge.GetVisitsToReachU(second_best, puct_mult, best_without_u,
            params_.GetBetamctsLevel() >= 3, params_.GetAprilFactor(), params_.GetAprilFactorParent());
