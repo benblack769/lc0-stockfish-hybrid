@@ -118,6 +118,7 @@ class SearchParams {
   int GetMaxOutOfOrderEvals() const { return kMaxOutOfOrderEvals; }
   float GetNpsLimit() const { return kNpsLimit; }
   int GetSolidTreeThreshold() const { return kSolidTreeThreshold; }
+  bool GetUseBetaUCB() const { return kUseBetaUCB; }
   bool GetUseBetaTS() const { return kUseBetaTS; }
   bool GetUseRENTS() const { return kUseRENTS; }
   float GetRENTSTemp() const { return kRENTSTemp; }
@@ -183,6 +184,7 @@ class SearchParams {
   static const OptionId kMaxOutOfOrderEvalsId;
   static const OptionId kNpsLimitId;
   static const OptionId kSolidTreeThresholdId;
+  static const OptionId kUseBetaUCBId;
   static const OptionId kUseBetaTSId;
   static const OptionId kUseRENTSId;
   static const OptionId kRENTSTempId;
@@ -240,6 +242,7 @@ class SearchParams {
   const int kMaxOutOfOrderEvals;
   const float kNpsLimit;
   const int kSolidTreeThreshold;
+  const bool kUseBetaUCB;
   const bool kUseBetaTS;
   const bool kUseRENTS;
   const float kRENTSTemp;

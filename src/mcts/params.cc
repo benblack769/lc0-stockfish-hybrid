@@ -302,6 +302,9 @@ const OptionId SearchParams::kSolidTreeThresholdId{
     "solid-tree-threshold", "SolidTreeThreshold",
     "Only nodes with at least this number of visits will be considered for "
     "solidification for improved cache locality."};
+const OptionId SearchParams::kUseBetaUCBId{
+    "use-beta-ucb", "UseBetaUCB",
+    "Use UCB calculation based on BetaMCTS."};
 const OptionId SearchParams::kUseBetaTSId{
     "use-beta-ts", "UseBetaTS",
     "Use Thompson Sampling based on BetaMCTS."};
@@ -394,6 +397,7 @@ void SearchParams::Populate(OptionsParser* options) {
   options->Add<IntOption>(kDrawScoreBlackId, -100, 100) = 0;
   options->Add<FloatOption>(kNpsLimitId, 0.0f, 1e6f) = 0.0f;
   options->Add<IntOption>(kSolidTreeThresholdId, 1, 2000000000) = 100;
+  options->Add<BoolOption>(kUseBetaUCBId) = false;
   options->Add<BoolOption>(kUseBetaTSId) = false;
   options->Add<BoolOption>(kUseRENTSId) = false;
   options->Add<FloatOption>(kRENTSExplorationFactorId, 0.0f, 10.0f) = 2.0f;
@@ -473,6 +477,7 @@ SearchParams::SearchParams(const OptionsDict& options)
                               options.Get<int>(kMiniBatchSizeId)))),
       kNpsLimit(options.Get<float>(kNpsLimitId)),
       kSolidTreeThreshold(options.Get<int>(kSolidTreeThresholdId)),
+      kUseBetaUCB(options.Get<bool>(kUseBetaUCBId)),
       kUseBetaTS(options.Get<bool>(kUseBetaTSId)),
       kUseRENTS(options.Get<bool>(kUseRENTSId)),
 	  kRENTSExplorationFactor(options.Get<float>(kRENTSExplorationFactorId)),
