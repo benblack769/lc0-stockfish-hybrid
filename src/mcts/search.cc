@@ -1311,7 +1311,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
         const float scaling = std::sqrt(child.GetP()) * cpuct;
         const float score = child.GetLCBBetamcts(params_.GetBetamctsTrust(),
                                                  params_.GetBetamctsPrior(),
-                                                 1.0f - params_.GetBetamctsPercentile(),
+                                                 1.0f - params_.GetLCBPercentile(),
                                                  scaling);
         // Copy + paste from regular PUCT calculation.
         if (score > best) {

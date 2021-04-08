@@ -489,9 +489,9 @@ class EdgeAndNode {
   float GetRBetamcts() const { return node_ ? node_->GetRBetamcts() : 1.0f; }
   void SetRBetamcts(float value) const { if (node_) { node_->SetRBetamcts(value); } }
 
-  float GetLCBBetamcts(float trust, float prior, float percentile) const {
+  float GetLCBBetamcts(float trust, float prior, float percentile, float scaling = 1.0f) const {
     return (node_ && node_->GetN() > 0) ?
-            node_->GetLCBBetamcts(trust, prior, percentile) : -1.0;
+            node_->GetLCBBetamcts(trust, prior, percentile, scaling) : -1.0;
   };
   float GetPolicy() const { return edge_->GetPolicy(); }
   // Returns U = numerator * p / N.
