@@ -461,7 +461,8 @@ std::vector<std::string> Search::GetVerboseStats(Node* node) const {
     print_stats(&oss, edge.node());
     print(&oss, "(U: ", edge.GetU(U_coeff,
             params_.GetAprilFactor(), params_.GetAprilFactorParent()), ") ", 6, 5);
-    print(&oss, "(S: ", Q + edge.GetU(U_coeff,
+    print(&oss, "(S: ", params_.GetUseBetaUCB() ? edge.GetLCBBetamcts(1.0, 1.0, 0.7, std::sqrt(edge.GetP()))
+            : Q + edge.GetU(U_coeff,
             params_.GetAprilFactor(), params_.GetAprilFactorParent()) + M, ") ", 8, 5);
     print_tail(&oss, edge.node());
     infos.emplace_back(oss.str());
@@ -1309,10 +1310,14 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
         }
       } else if (params_.GetUseBetaUCB()) {
         const float scaling = std::sqrt(child.GetP()) * cpuct;
+        const float score = child.GetN() > 0
+                    ? child.GetLCBBetamcts(1.0, 1.0, 0.7, scaling)
+                    : -node->GetLCBBetamcts(0.0, 1.0, 0.3, scaling);
+        /*
         const float score = child.GetLCBBetamcts(params_.GetBetamctsTrust(),
                                                  params_.GetBetamctsPrior(),
                                                  1.0f - params_.GetLCBPercentile(),
-                                                 scaling);
+                                                 scaling); */
         // Copy + paste from regular PUCT calculation.
         if (score > best) {
           best = score;
