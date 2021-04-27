@@ -1309,7 +1309,11 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
           cum_policy += child_policy;
         }
       } else if (params_.GetUseBetaUCB()) {
-        const float scaling = std::sqrt(child.GetP()) * cpuct;
+        const float score = child.GetPApril(params_.GetAprilFactor(),
+                                            params_.GetAprilFactorParent()) *
+                            child.GetRBetamcts() / (1.0 + child.GetNStarted());
+        /* const float scaling = std::sqrt(child.GetPApril(params_.GetAprilFactor(),
+                                        params_.GetAprilFactorParent())) * cpuct;
         const float score = child.GetN() > 0
                     ? child.GetLCBBetamcts(1.0, 1.0, 0.7, scaling)
                     : -node->GetLCBBetamcts(0.0, 1.0, 0.3, scaling);
@@ -1320,8 +1324,13 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
                                                  scaling); */
         // Copy + paste from regular PUCT calculation.
         if (score > best) {
+          second_best = best;
+          second_best_edge = best_edge;
           best = score;
           best_edge = child;
+        } else if (score > second_best) {
+          second_best = score;
+          second_best_edge = child;
         }
         if (can_exit) break;
         if (child.GetNStarted() == 0) {
@@ -1358,11 +1367,19 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
       }
     }
 
-    if (!params_.GetUseBetaUCB() && !params_.GetUseBetaTS() &&
+    if (!params_.GetUseBetaTS() &&
         !params_.GetUseRENTS() && second_best_edge) {
+      int estimated_visits_to_change_best;
+      if (params_.GetUseBetaUCB()) {
+        estimated_visits_to_change_best = (int)(best_edge.GetPApril(params_.GetAprilFactor(), params_.GetAprilFactorParent()) * best_edge.GetRBetamcts() /
+            (second_best_edge.GetPApril(params_.GetAprilFactor(), params_.GetAprilFactorParent()) * second_best_edge.GetRBetamcts()) *
+             second_best_edge.GetNStarted() -
+             best_edge.GetNStarted());
+      } else {
       int estimated_visits_to_change_best =
           best_edge.GetVisitsToReachU(second_best, puct_mult, best_without_u,
            params_.GetBetamctsLevel() >= 3, params_.GetAprilFactor(), params_.GetAprilFactorParent());
+      }
       // Only cache for n-2 steps as the estimate created by GetVisitsToReachU
       // has potential rounding errors and some conservative logic that can push
       // it up to 2 away from the real value.
