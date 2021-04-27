@@ -1311,7 +1311,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
       } else if (params_.GetUseBetaUCB()) {
         const float score = child.GetPApril(params_.GetAprilFactor(),
                                             params_.GetAprilFactorParent()) *
-                            child.GetRBetamcts() / (1.0 + child.GetNStarted());
+                            child.GetRBetamcts() / (1.0 + child.GetNStartedBetamcts());
         /* const float scaling = std::sqrt(child.GetPApril(params_.GetAprilFactor(),
                                         params_.GetAprilFactorParent())) * cpuct;
         const float score = child.GetN() > 0
@@ -1373,8 +1373,8 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
       if (params_.GetUseBetaUCB()) {
         estimated_visits_to_change_best = (int)(best_edge.GetPApril(params_.GetAprilFactor(), params_.GetAprilFactorParent()) * best_edge.GetRBetamcts() /
             (second_best_edge.GetPApril(params_.GetAprilFactor(), params_.GetAprilFactorParent()) * second_best_edge.GetRBetamcts()) *
-             second_best_edge.GetNStarted() -
-             best_edge.GetNStarted());
+             second_best_edge.GetNStartedBetamcts() -
+             best_edge.GetNStartedBetamcts());
       } else {
       int estimated_visits_to_change_best =
           best_edge.GetVisitsToReachU(second_best, puct_mult, best_without_u,
