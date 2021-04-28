@@ -1376,9 +1376,9 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
              second_best_edge.GetNStartedBetamcts() -
              best_edge.GetNStartedBetamcts());
       } else {
-      int estimated_visits_to_change_best =
-          best_edge.GetVisitsToReachU(second_best, puct_mult, best_without_u,
-           params_.GetBetamctsLevel() >= 3, params_.GetAprilFactor(), params_.GetAprilFactorParent());
+        estimated_visits_to_change_best =
+            best_edge.GetVisitsToReachU(second_best, puct_mult, best_without_u,
+             params_.GetBetamctsLevel() >= 3, params_.GetAprilFactor(), params_.GetAprilFactorParent());
       }
       // Only cache for n-2 steps as the estimate created by GetVisitsToReachU
       // has potential rounding errors and some conservative logic that can push
