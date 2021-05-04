@@ -1309,9 +1309,15 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
           cum_policy += child_policy;
         }
       } else if (params_.GetUseBetaUCB()) {
+        const float Q = child.GetQ(fpu, draw_score, params_.GetBetamctsLevel() >= 2);
+        const float one = 1.00001f; // 1 + epsilon to avoid division by zero.
+        const float score = FastLog((one + Q) / (one - Q)) +
+            cpuct * FastInvSqrt(((one - Q*Q)/4 * child.GetN() + 1) / (2.0 * child.GetP()));
+        /*
+        // Relevance based exploration.
         const float score = child.GetPApril(params_.GetAprilFactor(),
                                             params_.GetAprilFactorParent()) *
-                            child.GetRBetamcts() / (1.0 + child.GetNStartedBetamcts());
+                            child.GetRBetamcts() / (1.0 + child.GetNStartedBetamcts());*/
         /* const float scaling = std::sqrt(child.GetPApril(params_.GetAprilFactor(),
                                         params_.GetAprilFactorParent())) * cpuct;
         const float score = child.GetN() > 0
@@ -1367,14 +1373,15 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
       }
     }
 
-    if (!params_.GetUseBetaTS() &&
+    if (!params_.GetUseBetaTS() && !params_.GetUseBetaUCB() &&
         !params_.GetUseRENTS() && second_best_edge) {
       int estimated_visits_to_change_best;
       if (params_.GetUseBetaUCB()) {
+        /*
         estimated_visits_to_change_best = (int)(best_edge.GetPApril(params_.GetAprilFactor(), params_.GetAprilFactorParent()) * best_edge.GetRBetamcts() /
             (second_best_edge.GetPApril(params_.GetAprilFactor(), params_.GetAprilFactorParent()) * second_best_edge.GetRBetamcts()) *
              second_best_edge.GetNStartedBetamcts() -
-             best_edge.GetNStartedBetamcts());
+             best_edge.GetNStartedBetamcts());*/
       } else {
         estimated_visits_to_change_best =
             best_edge.GetVisitsToReachU(second_best, puct_mult, best_without_u,
