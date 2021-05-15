@@ -6,7 +6,7 @@ Lc0 can be acquired either via a git clone or an archive download from GitHub. B
 Download using git:
 
 ```
-git clone --recurse-submodules https://github.com/weepingwillowben/lc0-stockfish-hybrid
+git clone --recurse-submodules https://github.com/benblack769/lc0-stockfish-hybrid
 ```
 
 If you prefer to download an archive, you need to also download and place the submodule:
