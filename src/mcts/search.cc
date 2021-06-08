@@ -1278,6 +1278,9 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
     bool can_exit = false;
     const float rand_value = Random::Get().GetFloat(1.0);
     float cum_policy = 0.0;
+    // Use RENTS only for nodes with more than 100 visits. Transform into parameter later if useful.
+    int start_ts_randomization = 100;
+
     for (auto child : node->Edges()) {
       if (is_root_node) {
         // If there's no chance to catch up to the current best node with
@@ -1297,9 +1300,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
           continue;
         }
       }
-      // Use RENTS only for nodes with more than 100 visits.
-      // Use same loop for BetaTS.
-      if ((params_.GetUseBetaTS() || params_.GetUseRENTS()) && (node->GetN() > 0)) {
+      if ((params_.GetUseBetaTS() || params_.GetUseRENTS()) && (node->GetNStarted() > start_ts_randomization)) {
         const float child_policy = child.GetPolicy();
         best_edge = child;
         if (cum_policy + child_policy > rand_value) {
@@ -1308,6 +1309,29 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
         } else {
           cum_policy += child_policy;
         }
+      } else if (params_.GetUseBetaTS() && node->GetNStarted() <= start_ts_randomization) {
+        // Relevance based exploration.
+        const float score = child.GetPApril(params_.GetAprilFactor(),
+                                            params_.GetAprilFactorParent()) *
+                            child.GetRBetamcts() / (1.0 + child.GetNStartedBetamcts());
+        // Copy + paste from regular PUCT calculation.
+        if (score > best) {
+          second_best = best;
+          second_best_edge = best_edge;
+          best = score;
+          best_edge = child;
+        } else if (score > second_best) {
+          second_best = score;
+          second_best_edge = child;
+        }
+        if (can_exit) break;
+        if (child.GetNStarted() == 0) {
+          // One more loop will get 2 unvisited nodes, which is sufficient to
+          // ensure second best is correct. This relies upon the fact that edges
+          // are sorted in policy decreasing order.
+          can_exit = true;
+        }
+
       } else if (params_.GetUseBetaUCB()) {
         const float Q = child.GetQ(fpu, draw_score, params_.GetBetamctsLevel() >= 2);
         const float one = 1.00001f; // 1 + epsilon to avoid division by zero.
@@ -1373,15 +1397,14 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
       }
     }
 
-    if (!params_.GetUseBetaTS() && !params_.GetUseBetaUCB() &&
+    if (!params_.GetUseBetaUCB() &&
         !params_.GetUseRENTS() && second_best_edge) {
       int estimated_visits_to_change_best;
-      if (params_.GetUseBetaUCB()) {
-        /*
+      if (params_.GetUseBetaTS() && node->GetNStarted() <= start_ts_randomization) {
         estimated_visits_to_change_best = (int)(best_edge.GetPApril(params_.GetAprilFactor(), params_.GetAprilFactorParent()) * best_edge.GetRBetamcts() /
             (second_best_edge.GetPApril(params_.GetAprilFactor(), params_.GetAprilFactorParent()) * second_best_edge.GetRBetamcts()) *
              second_best_edge.GetNStartedBetamcts() -
-             best_edge.GetNStartedBetamcts());*/
+             best_edge.GetNStartedBetamcts());
       } else {
         estimated_visits_to_change_best =
             best_edge.GetVisitsToReachU(second_best, puct_mult, best_without_u,
