@@ -1404,7 +1404,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
         const float one = 1.00001f; // 1 + epsilon to avoid division by zero.
         float tmp = cpuct / (second_best - FastLog((one + best_without_u) / (one - best_without_u)) );
         estimated_visits_to_change_best = (int)((tmp * tmp * 2 * best_edge.GetPApril(params_.GetAprilFactor(), params_.GetAprilFactorParent()) - 1)
-                                                  / ((1 - best_without_u * best_without_u) / 4) ) - best_edge.GetNStarted();
+                                                  / ((one - best_without_u * best_without_u) / 4) ) - best_edge.GetNStarted();
       } else if (params_.GetUseBetaTS() && node->GetNStarted() <= start_ts_randomization) {
         estimated_visits_to_change_best = (int)(best_edge.GetPApril(params_.GetAprilFactor(), params_.GetAprilFactorParent()) * best_edge.GetRBetamcts() /
             (second_best_edge.GetPApril(params_.GetAprilFactor(), params_.GetAprilFactorParent()) * second_best_edge.GetRBetamcts()) *
