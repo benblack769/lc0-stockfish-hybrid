@@ -1336,7 +1336,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
         const float Q = child.GetQ(fpu, draw_score, params_.GetBetamctsLevel() >= 2);
         const float one = 1.00001f; // 1 + epsilon to avoid division by zero.
         const float score = FastLog((one + Q) / (one - Q)) +
-            cpuct * FastInvSqrt(((one - Q*Q)/4 * child.GetN() + 1) / (2.0 * child.GetP()));
+            cpuct * FastInvSqrt(((one - Q*Q)/4 * child.GetNStarted() + 1) / (2.0 * child.GetP()));
         /*
         // Relevance based exploration.
         const float score = child.GetPApril(params_.GetAprilFactor(),
@@ -1357,6 +1357,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
           second_best = best;
           second_best_edge = best_edge;
           best = score;
+          best_without_u = Q;
           best_edge = child;
         } else if (score > second_best) {
           second_best = score;
@@ -1397,10 +1398,14 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
       }
     }
 
-    if (!params_.GetUseBetaUCB() &&
-        !params_.GetUseRENTS() && second_best_edge) {
+    if (!params_.GetUseRENTS() && second_best_edge) {
       int estimated_visits_to_change_best;
-      if (params_.GetUseBetaTS() && node->GetNStarted() <= start_ts_randomization) {
+      if (params_.GetUseBetaUCB()) {
+        const float one = 1.00001f; // 1 + epsilon to avoid division by zero.
+        float tmp = cpuct / (second_best - FastLog((one + best_without_u) / (one - best_without_u)) );
+        estimated_visits_to_change_best = (int)((tmp * tmp * 2 * best_edge.GetPApril(params_.GetAprilFactor(), params_.GetAprilFactorParent()) - 1)
+                                                  / ((1 - best_without_u * best_without_u) / 4) ) - best_edge.GetNStarted();
+      } else if (params_.GetUseBetaTS() && node->GetNStarted() <= start_ts_randomization) {
         estimated_visits_to_change_best = (int)(best_edge.GetPApril(params_.GetAprilFactor(), params_.GetAprilFactorParent()) * best_edge.GetRBetamcts() /
             (second_best_edge.GetPApril(params_.GetAprilFactor(), params_.GetAprilFactorParent()) * second_best_edge.GetRBetamcts()) *
              second_best_edge.GetNStartedBetamcts() -
