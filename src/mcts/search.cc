@@ -1405,7 +1405,7 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
         float tmp = cpuct / (second_best - FastLog((one + best_without_u) / (one - best_without_u)) );
         estimated_visits_to_change_best = std::max(1,
                     (int)((tmp * tmp * 2 * best_edge.GetPApril(params_.GetAprilFactor(), params_.GetAprilFactorParent()) - 1)
-                      / ((one - best_without_u * best_without_u) / 4) ) - best_edge.GetNStarted());
+                      / ((one - best_without_u * best_without_u) / 4) ) - best_edge.GetNStarted() + 1);
       } else if (params_.GetUseBetaTS() && node->GetNStarted() <= start_ts_randomization) {
         estimated_visits_to_change_best = std::max(1,
                     (int)(best_edge.GetPApril(params_.GetAprilFactor(), params_.GetAprilFactorParent()) * best_edge.GetRBetamcts() /
