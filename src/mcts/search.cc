@@ -1333,9 +1333,9 @@ SearchWorker::NodeToProcess SearchWorker::PickNodeToExtend(
         }
 
       } else if (params_.GetUseBetaUCB()) {
-        const float Q = child.GetQ(fpu, draw_score, params_.GetBetamctsLevel() >= 2);
+        const float Q = child.GetQ(0.0, draw_score, params_.GetBetamctsLevel() >= 2);
         const float one = 1.00001f; // 1 + epsilon to avoid division by zero.
-        const float score = FastLog((one + Q) / (one - Q)) +
+        const float score = FastLog((one + Q) / (one - Q)) + (child.GetN() > 0 ? 0.0 : fpu - Q) +
             cpuct * FastInvSqrt(((one - Q*Q)/4 * child.GetNStarted() + 1) / (2.0 * child.GetPApril(params_.GetAprilFactor(), params_.GetAprilFactorParent())));
         /*
         // Relevance based exploration.
