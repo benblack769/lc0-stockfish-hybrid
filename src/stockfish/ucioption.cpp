@@ -39,6 +39,8 @@ namespace UCI {
 void on_clear_hash(const Option&) { Search::clear(); }
 void on_hash_size(const Option& o) {
     EvalTT.resize(o);
+    WhiteMinTT.resize(o);
+    BlackMinTT.resize(o);
 }
 void on_logger(const Option& o) { start_logger(o); }
 void on_threads(const Option& o) { Threads.set(o); }

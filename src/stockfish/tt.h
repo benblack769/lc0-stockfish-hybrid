@@ -96,6 +96,8 @@ private:
   uint8_t generation8; // Size must be not bigger than TTEntry::genBound8
 };
 
-extern TranspositionTable EvalTT;//for evaluation thread only
+extern TranspositionTable EvalTT; // for evaluation thread only
+extern TranspositionTable WhiteMinTT; // for evaluating bad moves by black
+extern TranspositionTable BlackMinTT; // for evaluation bad moves for white
 
 #endif // #ifndef TT_H_INCLUDED
