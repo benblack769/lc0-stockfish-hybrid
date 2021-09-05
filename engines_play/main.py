@@ -32,13 +32,17 @@ def run_game(e1info,e2info,folder,idx,timeout):
         str(inctime)
     ]
     print(" ".join(args))
+    out_path = f"{idx}game_out.txt"
     while True:
         try:
-            subprocess.check_call(args,cwd=folder,timeout=timeout)#,shell=True)
+            subprocess.check_call(args,cwd=folder,timeout=timeout,stdout=open(out_path,'w'))#,shell=True)
             return
         except subprocess.TimeoutExpired:
             with open(os.path.join(folder,"{}crash_log".format(idx)),'a') as crash_log:
                 crash_log.write("game timed out! restarting\n")
+            run_game(e1info,e2info,folder,idx,timeout)
+        except subprocess.CalledProcessError:
+            run_game(e1info,e2info,folder,idx,timeout)
 
 
 
