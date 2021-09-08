@@ -38,9 +38,9 @@ namespace UCI {
 /// 'On change' actions, triggered by an option's value change
 void on_clear_hash(const Option&) { Search::clear(); }
 void on_hash_size(const Option& o) {
-    EvalTT.resize(o/3);
-    WhiteMinTT.resize(o/3);
-    BlackMinTT.resize(o/3);
+    EvalTT.resize(o);
+    WhiteMinTT.resize(o);
+    BlackMinTT.resize(o);
 }
 void on_logger(const Option& o) { start_logger(o); }
 void on_threads(const Option& o) { Threads.set(o); }
