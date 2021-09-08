@@ -7,7 +7,7 @@ Requires 2 command line arguments, the paths to json files describing the engine
 Example json file is:
 
 {
-    "engine_path": "/home/ben/fun_projs/lc0/build/release/lc0",
+    "engine_path": "/home/ben/fun_projs/lc0/build/debugoptimized/lc0",
     "options": [
         "setoption name Hash value 6500",
         "setoption name Threads value 8"

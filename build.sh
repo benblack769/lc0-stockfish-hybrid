@@ -10,7 +10,7 @@ case $1 in
     shift
     ;;
   *)
-    BUILDTYPE=release
+    BUILDTYPE=debugoptimized
     ;;
 esac
 

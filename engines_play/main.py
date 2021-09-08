@@ -7,7 +7,7 @@ Requires 2 command line arguments, the paths to json files describing the engine
 Example json file is:
 
 {
-    "engine_path": "/home/ben/fun_projs/lc0/build/release/lc0",
+    "engine_path": "/home/ben/fun_projs/lc0/build/debugoptimized/lc0",
     "options": [
         "setoption name Hash value 6500",
         "setoption name Threads value 8"
@@ -31,8 +31,8 @@ def run_game(e1info,e2info,folder,idx,timeout):
         str(starttime),
         str(inctime)
     ]
-    print(" ".join(args))
-    out_path = f"{idx}game_out.txt"
+    out_path = os.path.join(folder,f"{idx}game_out.txt")
+    print(" ".join(args) + " > " + out_path)
     while True:
         try:
             subprocess.check_call(args,cwd=folder,timeout=timeout,stdout=open(out_path,'w'))#,shell=True)
@@ -41,8 +41,10 @@ def run_game(e1info,e2info,folder,idx,timeout):
             with open(os.path.join(folder,"{}crash_log".format(idx)),'a') as crash_log:
                 crash_log.write("game timed out! restarting\n")
             run_game(e1info,e2info,folder,idx,timeout)
-        except subprocess.CalledProcessError:
-            run_game(e1info,e2info,folder,idx,timeout)
+        except subprocess.CalledProcessError as ce:
+            with open(os.path.join(folder,"{}crash_log".format(idx)),'a') as crash_log:
+                crash_log.write(f"game crashed! \n{ce}\n moving on to next game\n")
+            # run_game(e1info,e2info,folder,idx,timeout)
 
 
 

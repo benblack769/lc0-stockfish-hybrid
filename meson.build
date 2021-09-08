@@ -18,6 +18,8 @@ project('lc0', 'cpp',
         default_options : ['cpp_std=c++14', 'b_ndebug=if-release'],
         meson_version: '>=0.45')
 
+#add_global_arguments('-fsanitize=address', language : 'c')
+
 cc = meson.get_compiler('cpp')
 if cc.get_id() == 'clang'
   # Thread safety annotation
