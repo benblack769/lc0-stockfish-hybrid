@@ -195,8 +195,6 @@ void Search::clear() {
 
   Time.availableNodes = 0;
   EvalTT.clear();
-  BlackMinTT.clear();
-  WhiteMinTT.clear();
 
   //reporting::clear();
   Threads.clear();
@@ -218,8 +216,6 @@ void MainThread::search() {
   Color us = rootPos.side_to_move();
   Time.init(Limits, us, rootPos.game_ply());
   EvalTT.new_search();
-  BlackMinTT.new_search();
-  WhiteMinTT.new_search();
   reporting::remove_old_nodes();
 
   if (rootMoves.empty())
@@ -617,7 +613,6 @@ void calc_single_node(Position & pos, const CompareablePosition & comp_pos, cons
         Value reduced_beta_value;
         int64_t microseconds_spent = reporting::time_microseconds([&](){
 
-        TranspositionTable & searchtt = comp_pos.active_color ? BlackMinTT : WhiteMinTT;
         reduced_beta_value = -search<NonPV>(pos, EvalTT, ss, -(minval+1), -minval, new_depth_v, false);
         /*if(reduced_beta_value <= minval){
             new_depth_v = static_cast<Depth>(new_depth+1);
@@ -627,13 +622,13 @@ void calc_single_node(Position & pos, const CompareablePosition & comp_pos, cons
         });
         total_microseconds_spent += microseconds_spent;
         if(reduced_beta_value > minval){
-            // auto move_opt = get_bestmove_from_tt(pos);
+            auto move_opt = get_bestmove_from_tt(pos);
             CompareableMove comp_move(UCI::move(move,pos.is_chess960()));
             all_ok_moves.push_back(comp_move);
-            // if(move_opt){
-            //     // a lot  of child moves are missing, so don't worry about them
-            //     reporting::set_bestmove_if_exists(pos.comp_pos(),move_opt.value(),new_depth_v);
-            // }
+            if(move_opt){
+                // a lot  of child moves are missing, so don't worry about them
+                reporting::set_bestmove_if_exists(pos.comp_pos(),move_opt.value(),new_depth_v);
+            }
         }
         pos.undo_move(move);
     }

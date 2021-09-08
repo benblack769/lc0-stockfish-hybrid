@@ -140,10 +140,7 @@ void ThreadPool::set(size_t requested) {
   }
 
   // Reallocate the hash with the new threadpool size
-  int hashsizeover3 = Options["Hash"] / 3;
-  EvalTT.resize(hashsizeover3);
-  BlackMinTT.resize(hashsizeover3);
-  WhiteMinTT.resize(hashsizeover3);
+  EvalTT.resize(Options["Hash"]);
 }
 
 /// ThreadPool::clear() sets threadPool data to initial values.
