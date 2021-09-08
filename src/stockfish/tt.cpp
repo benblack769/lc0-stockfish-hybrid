@@ -28,6 +28,8 @@
 #include "uci.h"
 
 TranspositionTable EvalTT;//for evaluation thread only
+TranspositionTable WhiteMinTT; // for evaluating bad moves by black
+TranspositionTable BlackMinTT; // for evaluation bad moves for white
 
 /// TTEntry::save saves a TTEntry
 void TTEntry::save(Key k, Value v, Bound b, Depth d, Move m, Value ev) {
