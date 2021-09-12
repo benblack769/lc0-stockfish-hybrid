@@ -483,7 +483,7 @@ void Thread::search() {
 
           if(rootMoves.size() && rootMoves[0].pv.size()){
               set_pv_bestmoves(rootPos,rootMoves[0].pv,rootDepth);
-              if(bestValue >= VALUE_MATE_IN_MAX_PLY){
+              if(bestValue >= VALUE_KNOWN_WIN){
                   reporting::set_found_mate();
               }
           }
@@ -750,7 +750,8 @@ namespace {
 
     assert(-VALUE_INFINITE <= alpha && alpha < beta && beta <= VALUE_INFINITE);
     assert(PvNode || (alpha == beta - 1));
-    assert(DEPTH_ZERO < depth && depth < DEPTH_MAX);
+    assert(DEPTH_ZERO < depth);
+    assert(depth < DEPTH_MAX);
     assert(!(PvNode && cutNode));
     assert(depth / ONE_PLY * ONE_PLY == depth);
 

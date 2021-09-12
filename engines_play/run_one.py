@@ -36,8 +36,12 @@ def get_bestmove(file,outfile):
         line = file.readline().decode()
         #print(line)
         outfile.write(line)
+        bad_line_count = 0
         if not line:
-            raise RuntimeError("werid output from engine")
+            bad_line_count += 1
+            if bad_line_count > 2:
+                raise RuntimeError("werid output from engine")
+            continue
 
         if "bestmove" in line:
             bestmove_start = line.index("bestmove")
@@ -139,7 +143,7 @@ class Engine:
         self.process.terminate()
         time.sleep(1.0)
         self.process.kill()
-        time.sleep(20.0)
+        time.sleep(5.0)
 
         self.stdoutfile.close()
 

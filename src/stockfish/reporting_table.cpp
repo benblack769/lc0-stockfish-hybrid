@@ -64,9 +64,7 @@ struct TimeRatioItem{
     }
 };
 double calc_comparitor(TableEntry & entry){
-    int moves = std::max(size_t(1),entry.get_moves().size());
-    int import_moves = moves <= 3 ? 1 : moves;
-    return entry.nodes_searched / (1.0+entry.ab_time * import_moves);
+    return entry.nodes_searched / (1.0+entry.ab_time);
 }
 void tr_swap(TimeRatioItem & i1, TimeRatioItem & i2){
     swap(i1.hash_ptr->second.item_location,i2.hash_ptr->second.item_location);
@@ -136,6 +134,9 @@ public:
         //if(pos.ep_diff(h_iter->first)){
         //    return;//don't change value of node if en passant differnet
         //}
+        if(entry.calced_search_depth >= DEPTH_MAX){
+            return;
+        }
         entry.moves_to_pos = moves_to_pos;
         entry.nodes_searched += mcts_nodes;
         if(entry.is_calulating){
