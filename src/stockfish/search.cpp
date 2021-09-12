@@ -198,7 +198,7 @@ void Search::clear() {
   BlackMinTT.clear();
   WhiteMinTT.clear();
 
-  //reporting::clear();
+  reporting::clear();
   Threads.clear();
   Tablebases::init(Options["SyzygyPath"]); // Free up mapped files
 }
@@ -220,7 +220,7 @@ void MainThread::search() {
   EvalTT.new_search();
   BlackMinTT.new_search();
   WhiteMinTT.new_search();
-  reporting::remove_old_nodes();
+  reporting::clear();
 
   if (rootMoves.empty())
   {
@@ -483,7 +483,7 @@ void Thread::search() {
 
           if(rootMoves.size() && rootMoves[0].pv.size()){
               set_pv_bestmoves(rootPos,rootMoves[0].pv,rootDepth);
-              if(bestValue >= VALUE_KNOWN_WIN){
+              if(bestValue >= VALUE_MATE_IN_MAX_PLY){
                   reporting::set_found_mate();
               }
           }
@@ -701,7 +701,7 @@ void MCTSThread::search(){
             move_idx++;
         }
         if(calc_pos.comp_pos() != calc_pos_data.pos){
-            //throw std::runtime_error("did not arrive at correct position through movelist");
+            throw std::runtime_error("did not arrive at correct position through movelist");
         }
 
         Value use_min_val = calc_pos.side_to_move() == cur_side_to_move ? minval : opp_minval;

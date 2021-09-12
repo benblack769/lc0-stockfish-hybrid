@@ -140,7 +140,7 @@ void UciLoop::RunLoop() {
       }
       if(command.first == "setoption"){
           std::string optionname = GetOrEmpty(command.second, "name");
-          if(optionname == "Hash" || optionname == "Threads" || optionname == "SyzygyPath"){
+          if(optionname == "Hash" || optionname == "Threads"){
              continue;
          }
       }

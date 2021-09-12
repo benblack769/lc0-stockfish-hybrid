@@ -27,8 +27,9 @@ using namespace std;
 
 mutex global_lock;
 mutex params_lock;
-mutex bestval_mutex;
 
+
+mutex bestval_mutex;
 Value curbestval;
 CompareableMoveList current_pv;
 reporting::Parameters global_params;
@@ -50,23 +51,16 @@ struct TableEntry{
     int nodes_searched=0;
     int calced_search_depth=MIN_SEARCH_DEPTH-1;
     bool is_calulating=false;
-    bool has_touched=true;
-    CompareableMoveList get_moves(){
-        TableEntry & entry = *this;
-        CompareableMoveList return_moves = entry.moves;
-        if(entry.bestmove.is_set() &&
-               !contains(return_moves,entry.bestmove)){
-                  return_moves.push_back(entry.bestmove);
-        }
-        return return_moves;
-    }
 };
 using heap_iter = typename unordered_map<CompareablePosition,TableEntry>::iterator;
 struct TimeRatioItem{
     std::pair<const CompareablePosition,TableEntry> * hash_ptr;
-    double cmp_val;
+    int64_t ab_time;
+    int mcts_nodes;
     bool operator < (const TimeRatioItem & o)const{
-        return cmp_val < o.cmp_val;
+        return ab_time && o.ab_time ?
+            (ab_time * o.mcts_nodes) > (mcts_nodes * o.ab_time) :
+            ab_time > o.ab_time;
     }
 };
 double calc_comparitor(TableEntry & entry){
@@ -90,7 +84,12 @@ public:
         }
         else{
             TableEntry & entry = iter->second;
-            return lczero::optional<ABTableEntry>(ABTableEntry{entry.get_moves(),iter->second.calced_search_depth});
+            CompareableMoveList return_moves = entry.moves;
+            if(entry.bestmove.is_set() &&
+                   !contains(return_moves,entry.bestmove)){
+                      return_moves.push_back(entry.bestmove);
+            }
+            return lczero::optional<ABTableEntry>(ABTableEntry{return_moves,iter->second.calced_search_depth});
         }
     }
     //saves some search info, but clears it for next move
@@ -127,7 +126,7 @@ public:
             rearange_item(entry.item_location);
         }
         else{*/
-        TimeRatioItem item = {&(*h_iter),calc_comparitor(entry)};
+        TimeRatioItem item = {&(*h_iter),entry.ab_time,entry.nodes_searched};
         push_heap(item);
         //}
     }
@@ -139,49 +138,25 @@ public:
         //}
         entry.moves_to_pos = moves_to_pos;
         entry.nodes_searched += mcts_nodes;
-        entry.has_touched = true;
         if(entry.is_calulating){
             return;
         }
         if(entry.item_location == INVALID_LOC){
-            push_heap(TimeRatioItem{&(*h_iter),calc_comparitor(entry)});
+            push_heap(TimeRatioItem{&(*h_iter),entry.ab_time,entry.nodes_searched});
         }
         else{
             TimeRatioItem & item = heap.at(entry.item_location);
-            item.cmp_val = calc_comparitor(entry);
+            item.ab_time = entry.ab_time;
+            item.mcts_nodes = entry.nodes_searched;
             rearange_item(entry.item_location);
         }
     }
     void clear(){
-        heap.clear();
         item_location.clear();
-    }
-    int remove_old_nodes(){
         heap.clear();
-        int remove_count = 0;
-        using item_iter = typename unordered_map<CompareablePosition,TableEntry>::iterator;
-        for(item_iter begin = item_location.begin(); begin != item_location.end();){
-            TableEntry & entry = begin->second;
-            if(!entry.has_touched){
-                item_iter old_iter = begin;
-                ++begin;
-                remove_count++;
-                item_location.erase(old_iter);
-            }
-            else{
-                entry.has_touched = false;
-                entry.item_location = INVALID_LOC;
-                //push_heap(TimeRatioItem{&(*begin),calc_comparitor(entry)});
-                ++begin;
-            }
-        }
-        return remove_count;
     }
     bool empty(){
         return heap.size() == 0;
-    }
-    size_t size(){
-        return item_location.size();
     }
     TimeHeapReturn pop(){
         if(!heap.size()){
@@ -356,15 +331,6 @@ void clear(){
     current_pv.clear();
     curdepth = -1;
     cur_glob_info = GlobalCollectionInfo();
-    global_lock.unlock();
-}
-void remove_old_nodes(){
-    global_lock.lock();
-    int rem_count = ratio_heap.remove_old_nodes();
-    current_pv.clear();
-    curdepth = -1;
-    cur_glob_info = GlobalCollectionInfo();
-    std::cout << "\n\nremoved: " << rem_count << "   " << ratio_heap.size() << "\n" << std::endl;
     global_lock.unlock();
 }
 GlobalCollectionInfo get_info(){

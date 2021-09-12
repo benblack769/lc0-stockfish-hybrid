@@ -778,7 +778,7 @@ void SearchWorker::ExecuteOneIteration() {
       search_pause = std::max(search_pause,0.0);
       int64_t microsecs_to_sleep = microsecs_spent * search_pause - 10;
       if(microsecs_to_sleep > 0){
-          //std::this_thread::sleep_for(std::chrono::microseconds(microsecs_to_sleep));
+          std::this_thread::sleep_for(std::chrono::microseconds(microsecs_to_sleep));
       }
   });
 }
