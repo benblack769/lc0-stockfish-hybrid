@@ -6,6 +6,7 @@ import sys
 def all_results_to_table(all_folders):
     result_table = {}
     for fold in all_folders:
+        print(fold)
         result_dict = get_results(fold)
         engine_names = sorted(set(result_dict.keys()) - {'drawn'})
         print(result_dict)

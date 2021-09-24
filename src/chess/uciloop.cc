@@ -241,7 +241,7 @@ void UciLoop::SendId() {
 
 void UciLoop::SendBestMove(const BestMoveInfo& move) {
     bool has_mate = reporting::has_found_mate();
-    std::string res_name = has_mate ? "best_mcts_move " : "bestmove ";
+    std::string res_name = has_mate ? "\nbest_mcts_move " : "\nbestmove ";
   std::string res = res_name + move.bestmove.as_string();
   if (move.ponder) res += " ponder " + move.ponder.as_string();
   if (move.player != -1) res += " player " + std::to_string(move.player);

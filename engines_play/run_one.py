@@ -36,13 +36,12 @@ def get_bestmove(file,outfile):
         line = file.readline().decode()
         #print(line)
         outfile.write(line)
-        bad_line_count = 0
         if not line:
             bad_line_count += 1
             if bad_line_count > 2:
                 raise RuntimeError("werid output from engine")
             continue
-
+        bad_line_count = 0
         if "bestmove" in line:
             bestmove_start = line.index("bestmove")
             line = line[bestmove_start:]
@@ -139,6 +138,9 @@ class Engine:
         self.close()
         return
 
+    def __del__(self):
+        self.process.kill()
+
     def close(self):
         self.process.terminate()
         time.sleep(1.0)
@@ -222,10 +224,10 @@ def process_game(eng1,eng2,game_idx):
                 duration = int((end - start) * 1000)
                 break
             except (subprocess.CalledProcessError,RuntimeError,ValueError) as err:
-                cur_eng.close()
-                cur_eng = create_engine(cur_eng.info,game_idx)
+                # cur_eng = create_engine(cur_eng.info,game_idx)
                 with open("{}crash_log".format(game_idx),'a') as crash_log:
                     crash_log.write("ERROR in {}:\n{}\n\n".format(cur_eng.name,str(err)))
+                return (board,board.result(claim_draw=True))
 
         timer.update_time(white_turn,duration)
 

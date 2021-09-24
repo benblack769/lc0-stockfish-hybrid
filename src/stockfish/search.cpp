@@ -6,7 +6,7 @@
 
   Stockfish is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
+  the Free Software FounTdation, either version 3 of the License, or
   (at your option) any later version.
 
   Stockfish is distributed in the hope that it will be useful,
@@ -190,7 +190,6 @@ void Search::init() {
 /// Search::clear() resets search state to its initial value
 
 void Search::clear() {
-
   Threads.main()->wait_for_search_finished();
 
   Time.availableNodes = 0;
@@ -604,6 +603,9 @@ void calc_single_node(Position & pos, const CompareablePosition & comp_pos, cons
 
     MoveList<LEGAL> all_moves(pos);
     int64_t total_microseconds_spent = 0;
+    if (-VALUE_INFINITE > minval-1 || minval+1 > VALUE_INFINITE){
+        return;
+    }
     for(Move move : all_moves){
         if(move == MOVE_NONE || !pos.legal(move)){
             std::cout << "\n\nmove failed!\n\n\n";

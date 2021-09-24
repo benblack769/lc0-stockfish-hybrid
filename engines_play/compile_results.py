@@ -7,10 +7,10 @@ import os
 
 def get_results(folder):
     results = []
-    for idx in range(10000000000):
+    for idx in range(500):
         pgn_path = os.path.join(folder,str(idx))
         if not os.path.exists(pgn_path):
-            break
+            continue
         with open(pgn_path) as pgn_file:
             first_game = chess.pgn.read_game(pgn_file)
             res = first_game.headers["Result"]
@@ -18,8 +18,10 @@ def get_results(folder):
                 results.append(first_game.headers["White"])
             elif res == "0-1":
                 results.append(first_game.headers["Black"])
-            else:
+            elif res == "1/2-1/2":
                 results.append("drawn")
+            else:
+                pass
     return Counter(results)
 
 if __name__ == "__main__":

@@ -112,6 +112,10 @@ public:
         const double mul_ratio = 0.001;
         cur_glob_info.avg_depth = (1-mul_ratio)*cur_glob_info.avg_depth + mul_ratio*search_depth;
         entry.calced_search_depth = search_depth;
+        // don't keep searching if you have reached max depth
+        if(entry.calced_search_depth >= DEPTH_MAX - 1){
+            return;
+        }
         if(!entry.is_calulating){
             throw runtime_error("finished without starting");
         }
@@ -134,7 +138,8 @@ public:
         //if(pos.ep_diff(h_iter->first)){
         //    return;//don't change value of node if en passant differnet
         //}
-        if(entry.calced_search_depth >= DEPTH_MAX){
+        // don't keep searching if you have reached max depth
+        if(entry.calced_search_depth >= DEPTH_MAX - 1){
             return;
         }
         entry.moves_to_pos = moves_to_pos;
