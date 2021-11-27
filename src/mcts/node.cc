@@ -504,6 +504,7 @@ void Node::SetPoliciesBetaTS(float cutoff_factor, float april_factor,
   float total = 0.0;
   float policy_total = 0.0;
   float policy_threshold = 0.0;
+  float policy_total_raw = 0.0;
   float parent_q = -GetQBetamcts();
   // The first edge has the highest policy by design.
   // If the first edge is a proven loss, visit all children.
@@ -516,6 +517,7 @@ void Node::SetPoliciesBetaTS(float cutoff_factor, float april_factor,
       intermediate[counter++] = val;
       total += val;
       policy_total += pol;
+      policy_total_raw += edge.GetP();
     }
   }
   const int n_children = counter;
@@ -527,7 +529,8 @@ void Node::SetPoliciesBetaTS(float cutoff_factor, float april_factor,
                           1.0f / (float)n_children : 0.0f;
   for (auto edge : Edges()) {
     if (edge.GetP() > policy_threshold) {
-      edge.edge()->SetPolicy(intermediate[counter++] * scale);
+      edge.edge()->SetPolicy(0.9 * intermediate[counter++] * scale
+                             + 0.1 * edge.GetP() / policy_total_raw);
     } else {
       edge.edge()->SetPolicy(default_policy);
     }
