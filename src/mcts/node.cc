@@ -359,7 +359,14 @@ void Node::CancelScoreUpdate(int multivisit) {
 
 void Node::FinalizeScoreUpdate(float v, float d, float m, int multivisit) {
   // Recompute Q.
-  wl_ += multivisit * (v - wl_) / (n_ + multivisit);
+  // compute wl via minimax,
+  double best_wl = v;
+  for(auto edge_it : this->Edges()){
+    Node * child = edge_it.GetOrSpawnNode(this);
+    best_wl = std::max(best_wl, double(- child->GetWL()));
+  }
+  wl_ = best_wl;
+  // wl_ += multivisit * (v - wl_) / (n_ + multivisit);
   d_ += multivisit * (d - d_) / (n_ + multivisit);
   m_ += multivisit * (m - m_) / (n_ + multivisit);
 
